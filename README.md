@@ -1,6 +1,6 @@
-# CU Boulder Graduate Thesis
+# CU Boulder PhD Thesis
 
-This repository contains my graduate thesis, built using LaTeX. Every push to the main branch automatically compiles the latest version using GitHub Actions.
+This repository contains my PhD thesis, built using LaTeX. Every push to the main branch automatically compiles the latest version using GitHub Actions.
 
 ## View the Thesis
 
