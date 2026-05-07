@@ -1,0 +1,79 @@
+%%%%%%%%%%%%%%%%%%%%%%%%
+%% SNAIL %%
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+\ctikzset{bipoles/snail/height/.initial=0.75}
+\ctikzset{bipoles/snail/width/.initial=1.75}
+
+\ctikzset{misc/fill=white}
+
+\makeatletter
+\pgfcircdeclarebipolescaled{misc}
+{}
+{\ctikzvalof{bipoles/snail/height}}
+{snail}
+{\ctikzvalof{bipoles/snail/height}}
+{\ctikzvalof{bipoles/snail/width}}
+{
+    \pgf@circ@setlinewidth{bipoles}{\pgfstartlinewidth}
+    
+    %% Loop
+    \pgfscope
+        \pgfsetcornersarced{\pgfpoint{4pt}{4pt}}
+        \pgfpathrectanglecorners
+            {\pgfpoint{\pgf@circ@res@left}
+            {\pgf@circ@res@down}}
+            {\pgfpoint{\pgf@circ@res@right}
+            {\pgf@circ@res@up}}
+        \pgf@circ@draworfill
+    \endpgfscope
+
+    %% Right leg: one junction centred on the res@down edge
+    \pgfscope
+        \pgfpathrectanglecorners
+            {\pgfpoint{.4*\pgf@circ@res@left}{(1+.4)*\pgf@circ@res@down}}
+            {\pgfpoint{.4*\pgf@circ@res@right}{(1-.4)*\pgf@circ@res@down}}
+        \pgfpathmoveto{\pgfpoint{.4*\pgf@circ@res@left}{(1+.4)*\pgf@circ@res@down}}
+        \pgfpathlineto{\pgfpoint{.4*\pgf@circ@res@right}{(1-.4)*\pgf@circ@res@down}}
+        \pgfpathmoveto{\pgfpoint{.4*\pgf@circ@res@left}{(1-.4)*\pgf@circ@res@down}}
+        \pgfpathlineto{\pgfpoint{.4*\pgf@circ@res@right}{(1+.4)*\pgf@circ@res@down}}
+        \pgf@circ@draworfill
+    \endpgfscope
+
+    %% Left leg (global): three small junctions spread along the res@up edge
+    \pgfscope
+        \pgfpathrectanglecorners
+            {\pgfpoint{.7*\pgf@circ@res@left}{(1+.3)*\pgf@circ@res@up}}
+            {\pgfpoint{.3*\pgf@circ@res@left}{(1-.3)*\pgf@circ@res@up}}
+        \pgfpathmoveto{\pgfpoint{.7*\pgf@circ@res@left}{(1+.3)*\pgf@circ@res@up}}
+        \pgfpathlineto{\pgfpoint{.3*\pgf@circ@res@left}{(1-.3)*\pgf@circ@res@up}}
+        \pgfpathmoveto{\pgfpoint{.7*\pgf@circ@res@left}{(1-.3)*\pgf@circ@res@up}}
+        \pgfpathlineto{\pgfpoint{.3*\pgf@circ@res@left}{(1+.3)*\pgf@circ@res@up}}
+        \pgf@circ@draworfill
+    \endpgfscope
+    \pgfscope
+        \pgfpathrectanglecorners
+            {\pgfpoint{.2*\pgf@circ@res@left}{(1+.3)*\pgf@circ@res@up}}
+            {\pgfpoint{.2*\pgf@circ@res@right}{(1-.3)*\pgf@circ@res@up}}
+        \pgfpathmoveto{\pgfpoint{.2*\pgf@circ@res@left}{(1+.3)*\pgf@circ@res@up}}
+        \pgfpathlineto{\pgfpoint{.2*\pgf@circ@res@right}{(1-.3)*\pgf@circ@res@up}}
+        \pgfpathmoveto{\pgfpoint{.2*\pgf@circ@res@left}{(1-.3)*\pgf@circ@res@up}}
+        \pgfpathlineto{\pgfpoint{.2*\pgf@circ@res@right}{(1+.3)*\pgf@circ@res@up}}
+        \pgf@circ@draworfill
+    \endpgfscope
+    \pgfscope
+        \pgfpathrectanglecorners
+            {\pgfpoint{.3*\pgf@circ@res@right}{(1+.3)*\pgf@circ@res@up}}
+            {\pgfpoint{.7*\pgf@circ@res@right}{(1-.3)*\pgf@circ@res@up}}
+        \pgfpathmoveto{\pgfpoint{.3*\pgf@circ@res@right}{(1+.3)*\pgf@circ@res@up}}
+        \pgfpathlineto{\pgfpoint{.7*\pgf@circ@res@right}{(1-.3)*\pgf@circ@res@up}}
+        \pgfpathmoveto{\pgfpoint{.3*\pgf@circ@res@right}{(1-.3)*\pgf@circ@res@up}}
+        \pgfpathlineto{\pgfpoint{.7*\pgf@circ@res@right}{(1+.3)*\pgf@circ@res@up}}
+        \pgf@circ@draworfill
+    \endpgfscope
+    
+    \pgfusepath{stroke,fill}
+}
+
+\def\pgf@circ@snail@path#1{\pgf@circ@bipole@path{snail}{#1}}
+\tikzset{snail/.style = {\circuitikzbasekey, /tikz/to path=\pgf@circ@snail@path, l=#1}}

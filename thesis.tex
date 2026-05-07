@@ -24,7 +24,7 @@
 % Improved text alignment.
 \usepackage{ragged2e}
 
-% To insert figures.
+% To insert figures. 
 \usepackage{graphicx}
 %
 \usepackage{epstopdf}
@@ -42,6 +42,10 @@
 
 % Proper equation rendering.
 \usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{circuitikz}
+\usepackage{custom_circuitikz}
+\usepackage[mode=buildnew]{standalone}
 \usepackage{amssymb}
 \usepackage{bbold}
 \usepackage{bm}
@@ -135,6 +139,12 @@
   backrefpages = {Cited on pp.},
 }
 
+% Glossary/notation list (abbreviations + custom entries)
+% Requires running: makeglossaries <jobname> 
+\usepackage[automake, abbreviations, sort=standard, nogroupskip, nopostdot, nohypertypes={abbreviations,main}, nonumberlist]{glossaries-extra}
+\makeglossaries
+\input{glossary}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%             PREAMBLE            %%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -143,10 +153,9 @@
 \title{Engineering Protection in Multi-Mode Superconducting Circuits}
 % Uncomment this if you want to customize the display of your thesis' title on
 % the title page only (such as inserting a line break).
-% \titlePageTitle{
-%   This is the Name\\
-%   of my Thesis
-% }
+\titlePageTitle{
+ Engineering Protection in \\ Multi-Mode Superconducting Circuits
+}
 
 % Who even are you ?
 \author{Eli J.} % {First Middle}
@@ -185,24 +194,26 @@
 
 % Your abstract will probably be more than one page.
 \abstract{ \OnePageChapter  % because it is very short
-  Often the abstract will be long enough to require more than one page, in which
-  case the macro \texttt{$\backslash$OnePageChapter} should \emph{not} be used.
+  This is my single-page abstract!
+  % Often the abstract will be long enough to require more than one page, in which
+  % case the macro \texttt{$\backslash$OnePageChapter} should \emph{not} be used.
 
-  But this one isn't, so it should.
+  % But this one isn't, so it should.
 }
 
 % Here's where you have the chance to blame other people for convincing you to
 % get a PhD.
 \dedication[Dedication]{ % NEVER use \OnePageChapter here.
   % Use \begin{center} ... \end{center} to center this content.
-  For whom it may concern.
+  This is my single-page dedication!
 }
 
 % NOTE: It says "must only be one page" but I definitely know people who have
 % had two page acknowledgements.
 \acknowledgements{ \OnePageChapter  % *MUST* BE ONLY ONE PAGE!
-  Here's where you acknowledge folks who helped.  But keep it short, i.e., no
-  more than one page, as required by the Grad School Specifications.
+  This is my single-page acknowledgements section!
+  % Here's where you acknowledge folks who helped.  But keep it short, i.e., no
+  % more than one page, as required by the Grad School Specifications.
 }
 
 % Uncomment to insert a page just before the first chapter with a nice quote or
@@ -254,6 +265,14 @@
 \input chapter-3-enumeration/chapter-3.tex
 \input chapter-4-zero-pi/chapter-4.tex
 \input chapter-5-rotor-codes/chapter-5.tex
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%            Glossary             %%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+{\let\clearpage\relax\let\cleardoublepage\relax\let\clearforchapter\relax
+% \glsaddall % uncomment to list all defined terms
+\printglossary[type=abbreviations, title=Glossary]}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%          BIBLIOGRAPHY           %%%%%%%%%%%%%%%%%

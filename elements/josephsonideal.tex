@@ -1,0 +1,35 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Josephson junction (ideal) %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\ctikzset{bipoles/josephsonideal/height/.initial=.6}
+\ctikzset{bipoles/josephsonideal/width/.initial=.6}
+
+\makeatletter
+\pgfcircdeclarebipolescaled{misc}
+{}
+{\ctikzvalof{bipoles/josephsonideal/height}}
+{josephsonideal}
+{\ctikzvalof{bipoles/josephsonideal/height}}
+{\ctikzvalof{bipoles/josephsonideal/height}}
+{
+    \pgf@circ@setlinewidth{bipoles}{\pgfstartlinewidth}
+    
+    \pgfscope
+        % \pgfpathrectanglecorners
+        %     {\pgfpoint{\pgf@circ@res@left}
+        %     {\pgf@circ@res@down}}
+        %     {\pgfpoint{\pgf@circ@res@right}
+        %     {\pgf@circ@res@up}}
+        \pgfpathmoveto{\pgfpoint{\pgf@circ@res@left}{\pgf@circ@res@down}}
+        \pgfpathlineto{\pgfpoint{\pgf@circ@res@right}{\pgf@circ@res@up}}
+        \pgfpathmoveto{\pgfpoint{\pgf@circ@res@left}{\pgf@circ@res@up}}
+        \pgfpathlineto{\pgfpoint{\pgf@circ@res@right}{\pgf@circ@res@down}}
+        \pgf@circ@draworfill
+    \endpgfscope
+    
+    \pgfusepath{stroke,fill}
+}
+
+\def\pgf@circ@josephsonideal@path#1{\pgf@circ@bipole@path{josephsonideal}{#1}}
+\tikzset{josephsonideal/.style = {\circuitikzbasekey, /tikz/to path=\pgf@circ@josephsonideal@path, l=#1}}

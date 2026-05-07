@@ -1,0 +1,62 @@
+%%%%%%%%%%%
+%% SQUID %%
+%%%%%%%%%%%
+
+\ctikzset{bipoles/squid/height/.initial=.6}
+\ctikzset{bipoles/squid/width/.initial=.6}
+
+\ctikzset{misc/fill=white}
+
+%% Scale with misc bipoles
+\makeatletter
+\pgfcircdeclarebipolescaled{misc}
+{}
+{\ctikzvalof{bipoles/squid/height}}
+{squid}
+{\ctikzvalof{bipoles/squid/height}}
+{\ctikzvalof{bipoles/squid/width}}
+{
+    \pgf@circ@setlinewidth{bipoles}{\pgfstartlinewidth}
+    
+    %% Loop
+    \pgfscope
+        \pgfsetcornersarced{\pgfpoint{4pt}{4pt}}
+        \pgfpathrectanglecorners
+            {\pgfpoint{\pgf@circ@res@left}
+            {\pgf@circ@res@down}}
+            {\pgfpoint{\pgf@circ@res@right}
+            {\pgf@circ@res@up}}
+        \pgf@circ@draworfill
+    \endpgfscope
+
+    %% Junctions
+    \pgfscope
+        \pgfpathrectanglecorners
+            {\pgfpoint{.4*\pgf@circ@res@left}
+            {(1+.4)*\pgf@circ@res@up}}
+            {\pgfpoint{.4*\pgf@circ@res@right}
+            {(1-.4)*\pgf@circ@res@up}}
+        \pgfpathmoveto{\pgfpoint{.4*\pgf@circ@res@left}{(1+.4)*\pgf@circ@res@up}}
+        \pgfpathlineto{\pgfpoint{.4*\pgf@circ@res@right}{(1-.4)*\pgf@circ@res@up}}
+        \pgfpathmoveto{\pgfpoint{.4*\pgf@circ@res@left}{(1-.4)*\pgf@circ@res@up}}
+        \pgfpathlineto{\pgfpoint{.4*\pgf@circ@res@right}{(1+.4)*\pgf@circ@res@up}}
+        \pgf@circ@draworfill
+    \endpgfscope
+    \pgfscope
+        \pgfpathrectanglecorners
+            {\pgfpoint{.4*\pgf@circ@res@left}
+            {(1+.4)*\pgf@circ@res@down}}
+            {\pgfpoint{.4*\pgf@circ@res@right}
+            {(1-.4)*\pgf@circ@res@down}}
+        \pgfpathmoveto{\pgfpoint{.4*\pgf@circ@res@left}{(1+.4)*\pgf@circ@res@down}}
+        \pgfpathlineto{\pgfpoint{.4*\pgf@circ@res@right}{(1-.4)*\pgf@circ@res@down}}
+        \pgfpathmoveto{\pgfpoint{.4*\pgf@circ@res@left}{(1-.4)*\pgf@circ@res@down}}
+        \pgfpathlineto{\pgfpoint{.4*\pgf@circ@res@right}{(1+.4)*\pgf@circ@res@down}}
+        \pgf@circ@draworfill
+    \endpgfscope
+    
+    \pgfusepath{stroke,fill}
+}
+
+\def\pgf@circ@squid@path#1{\pgf@circ@bipole@path{squid}{#1}}
+\tikzset{squid/.style = {\circuitikzbasekey, /tikz/to path=\pgf@circ@squid@path, l=#1}}

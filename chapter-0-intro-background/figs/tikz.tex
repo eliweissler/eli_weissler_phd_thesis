@@ -1,0 +1,17 @@
+\documentclass[tikz, border=5pt, crop]{standalone}
+\usepackage{circuitikz}
+\IfFileExists{custom_circuitikz.sty}
+  {\usepackage{custom_circuitikz}}
+  {\usepackage{../../custom_circuitikz}}
+
+\begin{document}
+
+\begin{tikzpicture}
+    \draw (0,0) rectangle (2,2);
+\end{tikzpicture}
+
+\begin{tikzpicture}
+    \draw (0,0) to[josephson] (0,2) -- (2,2) to[capacitor] (2,0) -- (0,0);
+\end{tikzpicture}
+
+\end{document}

@@ -1,0 +1,36 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% π-periodic Josephson junction %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\ctikzset{bipoles/josephson2/height/.initial=.85}
+
+\makeatletter
+\pgfcircdeclarebipolescaled{misc}
+{
+    \anchor{text}{\pgfextracty{\pgf@circ@res@up}{\northeast}
+        \pgfpoint{-.5\wd\pgfnodeparttextbox}{
+            \dimexpr.5\dp\pgfnodeparttextbox+.5\ht\pgfnodeparttextbox+\pgf@circ@res@up\relax
+        }
+    }
+}
+{\ctikzvalof{bipoles/josephson2/height}}
+{josephson2}
+{\ctikzvalof{bipoles/josephson2/height}}
+{\ctikzvalof{bipoles/josephson2/height}}
+{
+    \pgf@circ@setlinewidth{bipoles}{\pgfstartlinewidth}
+    
+    \pgfscope
+        \pgfpathmoveto{\pgfpoint{\pgf@circ@res@left}{\pgf@circ@res@zero}}
+        \pgfpathlineto{\pgfpoint{\pgf@circ@res@zero}{\pgf@circ@res@up}}
+        \pgfpathlineto{\pgfpoint{\pgf@circ@res@right}{\pgf@circ@res@zero}}
+        \pgfpathlineto{\pgfpoint{\pgf@circ@res@zero}{\pgf@circ@res@down}}
+        \pgfpathclose
+        \pgf@circ@draworfill
+    \endpgfscope
+    
+    \pgfusepath{stroke,fill}
+}
+
+\def\pgf@circ@josephson2@path#1{\pgf@circ@bipole@path{josephson2}{#1}}
+\tikzset{josephson2/.style = {\circuitikzbasekey, /tikz/to path=\pgf@circ@josephson2@path, l=#1}}
