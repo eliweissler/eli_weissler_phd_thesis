@@ -1,1 +1,21 @@
 *.aux
+*.bbl
+*.blg
+*.bcf
+*.fdb_latexmk
+*.fls
+*.idx
+*.ilg
+*.ind
+*.lof
+*.log
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.xdv
+*.DS_Store
+
+# Outputs
+thesis.pdf
