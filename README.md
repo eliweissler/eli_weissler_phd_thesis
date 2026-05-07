@@ -16,14 +16,24 @@ This thesis uses an improved LaTeX template based on the [CU Boulder Thesis Temp
 
 ## Building Locally
 
-To compile this thesis locally, simply use `latexmk` or your preferred LaTeX engine:
+To compile this thesis locally, run `latexmk` from the repository root with shell-escape enabled:
 ```bash
-latexmk -pdf thesis.tex
+latexmk -pdf -shell-escape thesis.tex
 ```
+
+`-shell-escape` is required because:
+- The `standalone` package (`mode=buildnew`) shells out to pre-compile each chapter's `figs/tikz.tex` into a PDF.
+- `glossaries-extra` (`automake`) invokes `makeglossaries` automatically via `\write18`.
+
+Building from a subdirectory (e.g. running `pdflatex` directly inside a `figs/` folder) also works — each `figs/tikz.tex` uses `\IfFileExists` to locate `custom_circuitikz.sty` either in the current directory or two levels up.
 
 ## Structure
 
 - `thesis.tex`: The root LaTeX file that stitches everything together.
 - `thesis.bib`: Reference files for bibliography.
 - `chapter-*/`: The individual chapter contents.
+  - `chapter-*/figs/`: Per-chapter standalone TikZ figures (e.g. `tikz.tex`), pre-compiled by the `standalone` package.
+- `appendix-*/`: Appendix contents, with their own `figs/` directories.
 - `macros.tex`: Custom LaTeX definitions.
+- `custom_circuitikz.sty`: Extra `circuitikz` element definitions (Josephson junctions, SNAILs, SQUIDs, etc.). Definitions courtesy of Thomas Smith.
+- `elements/`: Path/shape definitions for the custom circuit elements used by `custom_circuitikz.sty`.
