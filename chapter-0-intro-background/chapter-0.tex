@@ -73,7 +73,30 @@ Testing appreviation for \gls{cqed} and \gls{qec}
 
 \section{Numerical Modeling of Circuit QED Systems}
 
+Numerical methods are a powerful tool for understanding the behavior of circuit QED systems.
+There are a limited number of analytical solutions to the Hamiltonians that describe \gls{cqed} systems.
+Numerical methods are, to be clear, approximate solutions.
+However with modest computational resources, one can prove invaluable in system design and verifying analytical expressions.
+Numerical methods are also necessary for simulating time dynamics, where even fewer analytical solutions exist.
+
 \subsection{Finite Difference \& Spectral Methods}
+
+To model a system numerically, we must first define an appropriate basis. Unsurprisingly, this differs based on the circuit.
+In Superconducting circuits there are two distinct Hilbert spaces that emerge.
+The first is a standard continuous position (phase), momentum (charge) conjugate pair, as in the simple harmonic oscillator. 
+The second is a $2\pi$ periodic compact phase, or position, coordinate and integer valued charge, or momentum, coordinate. This would represent e.g., one unit cell of a Transmon potential.
+
+To model the continuous Hilbert, we must identify a basis that spans possible eigenfunctions $\psi(x)$, which will all be square normalizable, $\int_{-\infty}^{\infty}dx|\psi(x)|^2 = 1$.
+The two most common choices are first a discrete position or momentum eigenstates
+\begin{align}
+    \hat \charge \ket{\charge} = \charge \ket{\charge}, \quad \hat \phase \ket{\charge} = i\frac{\partial}{\partial \charge} \ket{\charge} \qquad \& \qquad \hat \charge \ket{\phase} = -i\frac{\partial}{\partial \phase}\ket{\phase}, \quad \hat \phase\ket{\phase} = \phase \ket{\phase} \,,
+\end{align}
+which are sampled at a finite number of points.
+Another straightforward choice is the harmonic oscillator basis
+\begin{align}
+    \ket{m}
+\end{align}
+
 \subsection{Multi-Mode \& Composite Systems}
 
 \section{Protecting Quantum Information from Noise}
