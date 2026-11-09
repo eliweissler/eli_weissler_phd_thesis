@@ -1,0 +1,92 @@
+% Two capacitively coupled transmons: (a) circuit, (b) configuration-space cells in
+% reduced node phases, node square (orange) and phi_pm = phi_1 +- phi_2 diamond
+% (blue), (c) charge lattice in (n_1, n_2) with the n_pm sublattice filled blue.
+% Compile standalone with the draw-circuit driver; \input into main.tex via the
+% standalone package. The josephson bipole comes from jj_bipoles.tex, which main.tex also loads.
+\documentclass[border=8pt]{standalone}
+
+\usepackage{tikz}
+\usepackage{circuitikz}
+\definecolor{figBlue}{RGB}{0,114,178}
+\definecolor{figOrange}{RGB}{213,94,0}
+
+\input{jj_bipoles}
+
+\begin{document}
+% Reduced-phase symbol for every phase label in this figure. Defined after
+% \begin{document} because main.tex's standalone package drops this preamble;
+% \providecommand lets main.tex override it.
+\providecommand{\rphase}{\varphi}%
+\begin{circuitikz}[line width=0.8pt, font=\small]
+    \ctikzset{bipoles/thickness=1, capacitors/scale=0.6}
+    \tikzset{
+        nd/.style={circle, fill, inner sep=1.1pt},
+        gdot/.style={circle, fill=black!55, fill opacity=0.5, inner sep=1.1pt},
+        node/.style={circle, fill=white, draw=figOrange, draw opacity=0.65, line width=0.6pt, inner sep=1.2pt},
+        pm/.style={circle, fill=figBlue, draw=figOrange, draw opacity=0.65, line width=0.6pt, inner sep=1.2pt},
+        nodecell/.style={figOrange, draw opacity=0.65, line width=0.8pt},
+        pmcell/.style={figBlue, fill=figBlue!30, line width=0.7pt},
+        lbl/.style={font=\scriptsize, inner sep=1pt},
+        ax/.style={-latex, line width=0.5pt},
+        panelcap/.style={font=\footnotesize, align=center},
+    }
+
+    % (a) the circuit: each transmon is a junction (outer) shunted by a capacitor
+    % (inner) with its own ground. The junction and shunt meet at the island node
+    % (dot), and a riser from each node carries the coupling capacitor.
+    \coordinate (j1t) at (0,1.2);    \coordinate (j1b) at (0,0);
+    \coordinate (c1t) at (0.55,1.2); \coordinate (c1b) at (0.55,0);
+    \coordinate (c2t) at (1.25,1.2); \coordinate (c2b) at (1.25,0);
+    \coordinate (j2t) at (1.8,1.2);  \coordinate (j2b) at (1.8,0);
+    \coordinate (i1) at (0.275,1.2); \coordinate (i2) at (1.525,1.2);
+    \coordinate (r1) at (0.275,1.6); \coordinate (r2) at (1.525,1.6);
+    \draw (j1t) to[josephson] (j1b);
+    \begin{scope}\ctikzset{capacitors/scale=0.45}\draw (c1t) to[C] (c1b);\end{scope}
+    \draw (j1t) -- (c1t);
+    \draw (j1b) -- (c1b);
+    \begin{scope}\ctikzset{capacitors/scale=0.45}\draw (c2t) to[C] (c2b);\end{scope}
+    \draw (j2t) to[josephson] (j2b);
+    \draw (c2t) -- (j2t);
+    \draw (c2b) -- (j2b);
+    \begin{scope}\ctikzset{capacitors/scale=0.45}\draw (i1) -- (r1) to[C] (r2) -- (i2);\end{scope}
+    \draw (0.275,0) node[ground]{};
+    \draw (1.525,0) node[ground]{};
+    \node[nd] at (i1) {};
+    \node[nd] at (i2) {};
+    \node[above left, inner sep=1.5pt] at (i1) {$\rphase_1$};
+    \node[above right, inner sep=1.5pt] at (i2) {$\rphase_2$};
+
+    % (b) configuration space in reduced node phases, 0.42 cm per pi.
+    % Orange square: (phi_1, phi_2) unit cell. Blue diamond: independent-rotor
+    % cell of phi_pm = phi_1 +- phi_2. Grey dots: the lattice 2 pi Z^2.
+    \begin{scope}[shift={(3.476,0.5)}, x=0.42cm, y=0.42cm]
+        \draw[pmcell] (-1,0) -- (0,1) -- (1,0) -- (0,-1) -- cycle;
+        \draw[nodecell] (-1,-1) rectangle (1,1);
+        \draw[black!40, line width=0.4pt, dash pattern=on 1pt off 1.5pt] (-2.25,-2.25) -- (2.25,2.25) node[above right, inner sep=0.5pt, font=\scriptsize, black!60] {$\rphase_+$};
+        \draw[black!40, line width=0.4pt, dash pattern=on 1pt off 1.5pt] (-2.25,2.25) -- (2.25,-2.25) node[below right, inner sep=0.5pt, font=\scriptsize, black!60] {$\rphase_-$};
+        \draw[ax] (-2.6,0) -- (2.75,0) node[right] {$\rphase_1$};
+        \draw[ax] (0,-2.6) -- (0,2.75) node[above] {$\rphase_2$};
+        \foreach \x in {-2,0,2} {\foreach \y in {-2,0,2} {\node[gdot] at (\x,\y) {};}}
+        \node[lbl, left] at (-0.1,2) {$2\pi$};
+        \node[lbl, below] at (2,-0.1) {$2\pi$};
+        \node[lbl, left] at (-0.1,-2) {$-2\pi$};
+        \node[lbl, below] at (-2,-0.1) {$-2\pi$};
+    \end{scope}
+
+    % (c) charge lattice (n_1, n_2), 0.42 cm spacing, same axis span as (b). Hollow orange: all integer
+    % (n_1, n_2). Blue fill: n_pm = (n_1 +- n_2)/2 integer, i.e. n_1 = n_2 mod 2.
+    \begin{scope}[shift={(6.5,0.5)}, x=0.42cm, y=0.42cm]
+        \draw[ax] (-2.6,0) -- (2.75,0) node[right] {$n_1$};
+        \draw[ax] (0,-2.6) -- (0,2.75) node[above] {$n_2$};
+        \foreach \i in {-2,...,2} {
+            \foreach \j in {-2,...,2} {
+                \pgfmathtruncatemacro{\prty}{mod(abs(\i+\j),2)}
+                \ifnum\prty=0 \node[pm] at (\i,\j) {}; \else \node[node] at (\i,\j) {}; \fi
+            }
+        }
+    \end{scope}
+
+    % panel labels on one baseline
+    \foreach \x/\t in {0.9/(a), 3.476/(b), 6.5/(c)} {\node[panelcap] at (\x,-0.95) {\t};}
+\end{circuitikz}
+\end{document}

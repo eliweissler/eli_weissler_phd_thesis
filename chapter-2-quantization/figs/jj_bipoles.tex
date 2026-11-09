@@ -1,0 +1,31 @@
+% Shared circuitikz bipole declarations, copied from the draw-circuit skill template.
+% Loaded in the preamble of main.tex and of each standalone figure in figs/.
+% Boxed Josephson junction: the co-located E_J || C_J branch with zero loop area.
+\ctikzset{
+    bipoles/josephson/height/.initial = 0.35,
+    bipoles/josephson/width/.initial  = 0.35,
+}
+\makeatletter
+\pgfcircdeclarebipolescaled{misc}
+{}
+{\ctikzvalof{bipoles/josephson/height}}
+{josephson}
+{\ctikzvalof{bipoles/josephson/height}}
+{\ctikzvalof{bipoles/josephson/width}}
+{
+    \pgf@circ@setlinewidth{bipoles}{\pgfstartlinewidth}
+    \pgfscope
+        \pgfpathrectanglecorners{\pgfpoint{\pgf@circ@res@left}{\pgf@circ@res@down}}{\pgfpoint{\pgf@circ@res@right}{\pgf@circ@res@up}}
+        \pgfsetfillcolor{white}
+        \pgfusepath{fill,stroke}
+        \pgfpathmoveto{\pgfpoint{\pgf@circ@res@left}{\pgf@circ@res@down}}
+        \pgfpathlineto{\pgfpoint{\pgf@circ@res@right}{\pgf@circ@res@up}}
+        \pgfpathmoveto{\pgfpoint{\pgf@circ@res@left}{\pgf@circ@res@up}}
+        \pgfpathlineto{\pgfpoint{\pgf@circ@res@right}{\pgf@circ@res@down}}
+        \pgfusepath{stroke}
+    \endpgfscope
+}
+\def\pgf@circ@josephson@path#1{\pgf@circ@bipole@path{josephson}{#1}}
+\tikzset{josephson/.style = {\circuitikzbasekey, /tikz/to path=\pgf@circ@josephson@path, l=#1}}
+
+\makeatother

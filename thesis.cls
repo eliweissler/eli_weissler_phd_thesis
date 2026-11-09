@@ -296,11 +296,12 @@
 % margins... Initialize several global document properties, but do so
 % *before* the beginning of the document to forces these changes.
 \AtBeginDocument{
-	\setlength{\topmargin}{-0.30in}
-	\setlength{\headheight}{0.20in}
-	\setlength{\headsep}{0.0in}
-	\setlength{\topskip}{0.40in}	% first line, down from page number
-	\setlength{\textheight}{9.10in}	% 9"-(topmargin+headsep+headheight)
+	% Page number sits inside the 1" top margin; text and floats start below it.
+	\setlength{\topmargin}{0.00in}
+	\setlength{\headheight}{0.15in}
+	\setlength{\headsep}{0.10in}
+	\setlength{\topskip}{0.15in}	% first line, down from top of text block
+	\setlength{\textheight}{8.70in}	% 9"-(headheight+headsep)-0.05" for descenders
 	\setlength{\footskip}{0pt}
 	\setlength{\oddsidemargin}{0.00in}
 	\setlength{\evensidemargin}{0.00in}

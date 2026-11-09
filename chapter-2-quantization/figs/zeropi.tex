@@ -1,0 +1,73 @@
+% The 0-pi qubit (Brooks, Kitaev, Preskill; Dempster et al.; Groszkowski et al.) (a), and the
+% four columns of its mode basis Z (b)-(e), in the style of lclc_box_modes.tex.
+% Ring J1 (1-2), L1 (2-3), J2 (3-4), L2 (4-1), threaded by Phi_ext, with C1 (1-3) and C2 (2-4)
+% across the diagonals, which cross at the center without connecting (C2 hops over C1).
+% Node numbering matches Groszkowski et al. Eq. (1) and the text of Sec. III.C.
+% In (b)-(e) each node carries the sign of its entry in that column of Z (main.tex, 0-pi paragraph);
+% branches whose flux vanishes in that column are grey.
+% Compile standalone with the draw-circuit driver; \input into main.tex.
+% The josephson bipole comes from jj_bipoles.tex, which main.tex also loads.
+\documentclass[border=8pt]{standalone}
+\usepackage{tikz}
+\usepackage{circuitikz}
+\input{jj_bipoles}
+\begin{document}
+\begin{circuitikz}[line width=0.8pt, font=\small]
+    \ctikzset{label/align = straight, bipoles/thickness=1, capacitors/scale=0.55, inductors/scale=0.9, inductors/coils=4, misc/scale=0.8}
+    \tikzset{
+        nd/.style={circle, fill, inner sep=1.1pt},
+        off/.style={color=black!30},
+        sgn/.style={font=\scriptsize, inner sep=1pt},
+        panelcap/.style={font=\footnotesize, align=center},
+    }
+
+    % (a) the circuit: square of side 2.8, flat side down
+    \coordinate (n1) at (0,2.8);
+    \coordinate (n2) at (2.8,2.8);
+    \coordinate (n3) at (2.8,0);
+    \coordinate (n4) at (0,0);
+    \coordinate (c) at (1.4,1.4);
+    \draw (n1) to[josephson, l=$J_1$] (n2);
+    \draw (n2) to[L, l=$L_1$] (n3);
+    \draw (n3) to[josephson, l=$J_2$] (n4);
+    \draw (n4) to[L, l=$L_2$] (n1);
+    \draw (n1) -- (0.3,2.5) to[C] (0.9,1.9) -- (n3);
+    \draw (n2) -- (2.5,2.5) to[C] (1.9,1.9) -- ([shift={(45:0.13)}]c) arc[start angle=45, end angle=225, radius=0.13] -- (n4);
+    \foreach \n in {n1,n2,n3,n4} {\node[nd] at (\n) {};}
+    \node at (1.1,2.1) {$C_1$};
+    \node at (1.7,2.1) {$C_2$};
+    \node[above left] at (n1) {1};
+    \node[above right] at (n2) {2};
+    \node[below right] at (n3) {3};
+    \node[below left] at (n4) {4};
+    \node at (1.4,0.55) {$\odot\,\Phi_{\rm ext}$};
+    \node[panelcap] at (1.4,-0.95) {(a) 0-$\pi$ qubit};
+
+    % (b)-(e) the columns of Z: node signs, and grey branches with zero flux.
+    % #1 x, #2 y, #3..#6 signs at nodes 1..4, #7 J style, #8 L style, #9 C style
+    \newcommand{\zppanel}[9]{
+        \begin{scope}[shift={(#1,#2)}]
+            \ctikzset{capacitors/scale=0.32, inductors/scale=0.5, misc/scale=0.5}
+            \draw[#7] (0,1.1) to[josephson] (1.1,1.1);
+            \draw[#7] (1.1,0) to[josephson] (0,0);
+            \draw[#8] (1.1,1.1) to[L] (1.1,0);
+            \draw[#8] (0,0) to[L] (0,1.1);
+            \draw[#9] (0,1.1) -- (0.15,0.95) to[C] (0.43,0.67) -- (1.1,0);
+            \draw[#9] (1.1,1.1) -- (0.95,0.95) to[C] (0.67,0.67) -- ([shift={(45:0.07)}]0.55,0.55) arc[start angle=45, end angle=225, radius=0.07] -- (0,0);
+            \foreach \x/\y in {0/1.1, 1.1/1.1, 1.1/0, 0/0} {\node[nd] at (\x,\y) {};}
+            \node[sgn, above left] at (0,1.1) {$#3$};
+            \node[sgn, above right] at (1.1,1.1) {$#4$};
+            \node[sgn, below right] at (1.1,0) {$#5$};
+            \node[sgn, below left] at (0,0) {$#6$};
+        \end{scope}
+    }
+    \zppanel{4.0}{1.65}{+}{-}{-}{+}{}{off}{}
+    \node[panelcap] at (4.55,1.1) {(b) compact};
+    \zppanel{5.9}{1.65}{+}{-}{+}{-}{}{}{off}
+    \node[panelcap] at (6.45,1.1) {(c) extended};
+    \zppanel{4.0}{-0.55}{+}{+}{-}{-}{off}{}{}
+    \node[panelcap] at (4.55,-1.1) {(d) harmonic};
+    \zppanel{5.9}{-0.55}{+}{+}{+}{+}{off}{off}{off}
+    \node[panelcap] at (6.45,-1.1) {(e) cyclic};
+\end{circuitikz}
+\end{document}

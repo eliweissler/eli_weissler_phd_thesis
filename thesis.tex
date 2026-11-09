@@ -20,6 +20,8 @@
 % Improved typography.
 \usepackage{csquotes}
 \usepackage{microtype}
+% Extra stretch for paragraphs that would otherwise overflow the right margin.
+\setlength{\emergencystretch}{2em}
 
 % Improved text alignment.
 \usepackage{ragged2e}
@@ -46,6 +48,62 @@
 \usepackage{circuitikz}
 \usepackage{custom_circuitikz}
 \usepackage[mode=buildnew]{standalone}
+
+% Chapter 2 (circuit quantization) preamble additions.
+\usepackage{mathrsfs}
+\newcommand{\onecolumngrid}{}
+\newcommand{\unitsof}[1]{\ensuremath{\left[\mathrm{#1}\right]}}
+\definecolor{Plum}{RGB}{146,39,143}
+\newcommand{\jc}[1]{\textcolor{Plum}{#1}}
+\usetikzlibrary{quantikz,arrows.meta,fit}
+% figOrange is Okabe--Ito "vermillion" (#D55E00), not their lighter "orange" (#E69F00).
+\definecolor{figBlue}{RGB}{0,114,178}
+\definecolor{figOrange}{RGB}{213,94,0}
+\definecolor{figGreen}{RGB}{0,158,115}
+\input{chapter-2-quantization/figs/jj_bipoles}
+
+% Chapter 3 (circuit enumeration) preamble additions.
+\usetikzlibrary{positioning,calc}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\newtheorem{definition}{Definition}
+\newenvironment{widetext}{}{}
+\newcommand{\citet}{\textcite}
+% Josephson-junction pics: jj (no junction capacitance) and jjbox (with capacitance).
+\tikzset{
+  % Boxed Josephson junction
+  pics/jjbox/.style={
+    code={
+      % leads
+      \draw[line width=1.1pt] (-0.65,0) -- (-0.25,0);
+      \draw[line width=1.1pt] ( 0.25,0) -- ( 0.65,0);
+
+      % box
+      \draw[line width=1.1pt]
+        (-0.25,-0.25) rectangle (0.25,0.25);
+
+      % X -- extends to the box corners
+      \draw[line width=1.1pt]
+        (-0.25,-0.25) -- (0.25,0.25);
+      \draw[line width=1.1pt]
+        (-0.25, 0.25) -- (0.25,-0.25);
+    }
+  },
+  % Unboxed Josephson junction
+  pics/jj/.style={
+    code={
+      % leads
+      \draw[line width=1.1pt] (-0.65,0) -- (0,0);
+      \draw[line width=1.1pt] ( 0.0,0) -- ( 0.65,0);
+
+      % X -- extends to the box corners
+      \draw[line width=1.1pt]
+        (-0.25,-0.25) -- (0.25,0.25);
+      \draw[line width=1.1pt]
+        (-0.25, 0.25) -- (0.25,-0.25);
+    }
+  }
+}
 \usepackage{amssymb}
 \usepackage{bbold}
 \usepackage{bm}
@@ -72,6 +130,30 @@
 \newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 % Increase table spacing so they're actually legible.
 \renewcommand{\arraystretch}{1.5}
+% Matrices and cases in equations keep single spacing (the stretch above is for tables).
+\usepackage{etoolbox}
+\AtBeginEnvironment{pmatrix}{\renewcommand{\arraystretch}{1.3}\setstretch{1}}
+\AtBeginEnvironment{cases}{\renewcommand{\arraystretch}{1.3}\setstretch{1}}
+
+% Code listings.
+\usepackage{listings}
+% \FloatBarrier keeps figures from floating past a block of listings.
+\usepackage{placeins}
+\lstset{
+  language=Python,
+  basicstyle=\setstretch{1}\ttfamily\small,
+  keywordstyle=\color{blue!60!black}\bfseries,
+  commentstyle=\color{green!40!black}\itshape,
+  stringstyle=\color{red!50!black},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  frame=single,
+  % Keep line numbers and frame inside the 1" margins.
+  xleftmargin=2.5em,
+  xrightmargin=4pt,
+  breaklines=true,
+  showstringspaces=false,
+}
 
 % PDF hyper-references (i.e., links between pages).
 \usepackage{hyperref}
@@ -83,7 +165,11 @@
   colorlinks,
   linkcolor={red!50!black},
   citecolor={blue!50!black},
-  urlcolor={blue!80!black}
+  urlcolor={blue!80!black},
+  pdftitle={Engineering Protection in Multi-Mode Superconducting Circuits},
+  pdfauthor={Eli J. Weissler},
+  pdflang={en-US},
+  pdfdisplaydoctitle=true
 }
 
 % Clever references: stop typing "Equation~\ref{foo}" manually---just type
@@ -99,6 +185,15 @@
 % page.  There ought to be a better way...
 \makeatletter
 \g@addto@macro\@floatboxreset{\vspace{2pt}}
+% Center float contents (tables were flush left).
+\g@addto@macro\@floatboxreset{\centering}
+% Figures drawn for one column of the two-column paper keep their intended size.
+\newcommand{\colfigwidth}{0.6\textwidth}
+% Let floats share pages with text and avoid queueing at the end of a chapter.
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.7}
 \makeatother
 
 % Lets you patch LaTeX commands.
@@ -121,29 +216,24 @@
   biblabel=brackets,
   pageranges=false, % Does anybody care about page ranges anymore?
   backref=true, % Enables "Cited on p. XX" messages for all references.
-  sorting=nyt,
+  sorting=none, % Number references in order of first citation.
   sortcites=true,
   sortcase=false,
   url=false, % Still printed for @online entries.
-  eprint=false,
+  eprint=true,
   doi=false, % Provide missing page numbers to suppress this everywhere
   date=year,
 ]{biblatex}
 % Allows the bibliography to create DOI links.
 \usepackage{doi}
-% The name of your bibliography file.  Pretty sure you can import multiple.
+% thesis.bib is auto-exported from Zotero; manual.bib holds manually added entries.
 \addbibresource{thesis.bib}
+\addbibresource{manual.bib}
 % Defines the format for back-references.
 \DefineBibliographyStrings{english}{%
   backrefpage = {Cited on p.},
   backrefpages = {Cited on pp.},
 }
-
-% Glossary/notation list (abbreviations + custom entries)
-% Requires running: makeglossaries <jobname> 
-\usepackage[automake, abbreviations, sort=standard, nogroupskip, nopostdot, nohypertypes={abbreviations,main}, nonumberlist]{glossaries-extra}
-\makeglossaries
-\input{glossary}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%             PREAMBLE            %%%%%%%%%%%%%%%%%
@@ -163,7 +253,7 @@
 
 % How long have you already been in school?
 \otherdegrees{
-  B.S., Phsyics, Harvey Mudd College, 2019 \\
+  B.S., Physics, Harvey Mudd College, 2019 \\
   M.S., Electrical Engineering, University of Colorado Boulder, 2024
 }
 
@@ -194,26 +284,19 @@
 
 % Your abstract will probably be more than one page.
 \abstract{ \OnePageChapter  % because it is very short
-  This is my single-page abstract!
-  % Often the abstract will be long enough to require more than one page, in which
-  % case the macro \texttt{$\backslash$OnePageChapter} should \emph{not} be used.
-
-  % But this one isn't, so it should.
+  \input{chapter-0-preamble/abstract}
 }
 
 % Here's where you have the chance to blame other people for convincing you to
 % get a PhD.
 \dedication[Dedication]{ % NEVER use \OnePageChapter here.
-  % Use \begin{center} ... \end{center} to center this content.
-  This is my single-page dedication!
+  \input{chapter-0-preamble/dedication}
 }
 
 % NOTE: It says "must only be one page" but I definitely know people who have
 % had two page acknowledgements.
 \acknowledgements{ \OnePageChapter  % *MUST* BE ONLY ONE PAGE!
-  This is my single-page acknowledgements section!
-  % Here's where you acknowledge folks who helped.  But keep it short, i.e., no
-  % more than one page, as required by the Grad School Specifications.
+  \input{chapter-0-preamble/acknowledgements}
 }
 
 % Uncomment to insert a page just before the first chapter with a nice quote or
@@ -242,8 +325,27 @@
 %%%%% CUSTOM COMMANDS
 \newcommand{\ewc}[1]{{\blu{ [[EW: {#1}]]}}}
 \newcommand{\ew}[1]{{\blu {#1}}}
-\newcommand{\phase}{\phi}
+\renewcommand{\phase}{\phi}
 \newcommand{\charge}{n}
+\newcommand{\zp}{\ensuremath{0-\pi}}
+\newcommand{\zps}{\ensuremath{0-\pi}\,}
+\newcommand{\cqed}{cQED}
+
+% Bra-ket notation
+\newcommand{\ip}[2]{\langle{#1}|{#2}\rangle}
+\newcommand{\op}[2]{\ket{#1}\!\bra{#2}}
+\newcommand{\expt}[1]{\langle{#1}\rangle}
+
+
+
+
+\newcommand{\half}{\tfrac{1}{2}}
+\newcommand{\smallfrac}[2]{\mbox{$\frac{#1}{#2}$}}
+
+
+
+\newcommand{\canonical}{reference}
+\newcommand{\Canonical}{Reference}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%            DOCUMENT             %%%%%%%%%%%%%%%%%
@@ -267,20 +369,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % It's probably preferable to break your chapters into different files and
 % include them here.
-\input chapter-0-intro-background/chapter-0.tex
-\input chapter-1-quantization/chapter-1.tex
-\input chapter-2-modeling/chapter-2.tex
+\input chapter-1-intro-background/chapter-1.tex
+\input chapter-2-quantization/chapter-2.tex
 \input chapter-3-enumeration/chapter-3.tex
 \input chapter-4-zero-pi/chapter-4.tex
-\input chapter-5-rotor-codes/chapter-5.tex
+% \input chapter-5-rotor-codes/chapter-5.tex
+% \input chapter-6-modeling/chapter-6.tex
+% \input chapter-7-conclusion/chapter-7.tex
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%            Glossary             %%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-{\let\clearpage\relax\let\cleardoublepage\relax\let\clearforchapter\relax
-% \glsaddall % uncomment to list all defined terms
-\printglossary[type=abbreviations, title=Glossary]}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%          BIBLIOGRAPHY           %%%%%%%%%%%%%%%%%
@@ -305,7 +401,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Remove/comment these lines if you don't have any.
 \appendix
-\input appendix-a/appendix-a.tex
-\input appendix-b/appendix-b.tex
+\input chapter-8-appendices/appendix-listings.tex
+\input chapter-8-appendices/appendix-quantization.tex
+\input chapter-8-appendices/appendix-enumeration.tex
+\input chapter-8-appendices/appendix-zero-pi.tex
 
 \end{document}

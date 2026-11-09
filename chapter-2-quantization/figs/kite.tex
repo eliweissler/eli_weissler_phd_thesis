@@ -1,0 +1,43 @@
+% The cos(2 phi) transmon (KITE) of Roverch et al., drawn as in the source: a
+% hexagonal loop with a junction on each vertical side and an inductor on each diagonal,
+% threaded by Phi_ext, shunted by C_S between the top node and ground. Only the
+% shunted node carries capacitance to ground, so the two modes in which a junction's
+% terminals move together are frozen. Reference frame: varphi (compact, across C_S),
+% phi_Sigma and phi_Delta (sum and difference of the two upper inductor phases).
+% Compile standalone with the draw-circuit driver; \input into main.tex via the
+% standalone package. The josephson bipole comes from jj_bipoles.tex, which main.tex also loads.
+\documentclass[border=3pt]{standalone}
+\usepackage{tikz}
+\usepackage{circuitikz}
+\input{jj_bipoles}
+\begin{document}
+\begin{circuitikz}[line width=0.7pt, font=\small]
+    \ctikzset{label/align = straight, bipoles/thickness=1, capacitors/scale=0.55, inductors/scale=0.9, inductors/coils=4, misc/scale=0.8}
+    \tikzset{lbl/.style={font=\small, inner sep=0.5pt}}
+    \coordinate (T) at (0,1.7);
+    \coordinate (B) at (0,-1.7);
+    \coordinate (UL) at (-1.472,0.85);
+    \coordinate (LL) at (-1.472,-0.85);
+    \coordinate (UR) at (1.472,0.85);
+    \coordinate (LR) at (1.472,-0.85);
+    \coordinate (CT) at (-2.2,1.7);
+    \coordinate (CB) at (-2.2,-1.7);
+    % left arm
+    \draw (T) to[L, l=$L$] (UL);
+    \draw (UL) to[josephson] (LL);
+    \draw (LL) to[L, l=$L$] (B);
+    % right arm
+    \draw (T) to[L, l_=$L$] (UR);
+    \draw (UR) to[josephson] (LR);
+    \draw (LR) to[L, l_=$L$] (B);
+    % shunt on the left and ground
+    \draw (T) -- (CT);
+    \draw (CT) to[C, l_=$C_S$] (CB);
+    \draw (CB) -- (B);
+    \draw (B) node[ground]{};
+    % junction labels inside the loop, flux at the center
+    \node[lbl] at (-0.98,0) {$E_{J1}$};
+    \node[lbl] at (0.98,0) {$E_{J2}$};
+    \node at (0,0) {$\odot\,\Phi_{\rm ext}$};
+\end{circuitikz}
+\end{document}

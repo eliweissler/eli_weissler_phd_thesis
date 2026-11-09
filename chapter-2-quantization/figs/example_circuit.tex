@@ -1,0 +1,48 @@
+% Worked example for Sec. II.A: a grounded tunable transmon (junctions J_1, J_2)
+% capacitively coupled through C_c to an LC resonator, which is driven by a
+% voltage source through C_d. Branch order (J_1, J_2, C_c, L_r||C_r, C_d).
+% Compile standalone with the draw-circuit driver; \input into main.tex via the
+% standalone package. The josephson bipole comes from jj_bipoles.tex, which main.tex also loads.
+\documentclass[border=8pt]{standalone}
+
+\usepackage{tikz}
+\usepackage{circuitikz}
+
+\input{jj_bipoles}
+
+\begin{document}
+\begin{circuitikz}[line width=0.8pt, font=\small]
+    \ctikzset{bipoles/thickness=1, capacitors/scale=0.6, inductors/scale=0.7}
+    \tikzset{
+        nd/.style={circle, fill, inner sep=1.1pt},
+        loop/.style={font=\footnotesize, inner sep=1pt},
+    }
+
+    % Top rails (node 1 on the left, node 2 on the right) and the ground rail.
+    \coordinate (j1t) at (0,1.5);   \coordinate (j1b) at (0,0);
+    \coordinate (j2t) at (1.2,1.5); \coordinate (j2b) at (1.2,0);
+    \coordinate (lt) at (3.4,1.5);  \coordinate (lb) at (3.4,0);
+    \coordinate (ct) at (4.1,1.5);  \coordinate (cb) at (4.1,0);
+    \coordinate (vt) at (6.1,1.5);  \coordinate (vb) at (6.1,0);
+
+    \draw (j1t) to[josephson, l_=$J_1$] (j1b);
+    \draw (j2t) to[josephson, l=$J_2$] (j2b);
+    \draw (j1t) -- (j2t) to[C, l=$C_c$] (lt);
+    \draw (lt) to[L, l_=$L_r$] (lb);
+    \draw (ct) to[C, l=$C_r$] (cb);
+    \draw (lt) -- (ct) to[C, l=$C_d$] (vt);
+    \draw (vb) to[sV, l_=$V(t)$] (vt);
+    \draw (j1b) -- (vb);
+    \draw (2.3,0) node[ground]{};
+
+    \node[nd] at (j2t) {};
+    \node[nd] at (lt) {};
+    \node[above, inner sep=2pt] at (0.6,1.5) {$\Phi_1$};
+    \node[above, inner sep=2pt] at (3.75,1.5) {$\Phi_2$};
+
+    % Loop fluxes, one per face; each face is closed by branch J_1, C_c, or C_d.
+    \node[loop] at (0.6,0.45) {$\odot\,\Phi_x$};
+    \node[loop] at (2.3,0.45) {$\odot\,\Phi_y$};
+    \node[loop] at (5.15,0.45) {$\odot\,\Phi_z$};
+\end{circuitikz}
+\end{document}

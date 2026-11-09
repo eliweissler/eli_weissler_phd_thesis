@@ -1,0 +1,62 @@
+% Floating LCLC box (a) and the four columns of its mode basis Z (b)-(e).
+% In (b)-(e) each node carries its entry of the column (signs of +-1); branches
+% whose flux vanishes in that column are drawn grey. Values from
+% examples/lclc_box.ipynb (circuit-quantization).
+% Compile standalone with the draw-circuit driver; \input into main.tex via the
+% standalone package, so all circuitikz settings live inside the picture.
+\documentclass[border=8pt]{standalone}
+
+\usepackage{tikz}
+\usepackage{circuitikz}
+
+\begin{document}
+\begin{circuitikz}[line width=0.8pt, font=\small]
+    \ctikzset{bipoles/thickness=1, capacitors/scale=0.6, inductors/scale=1.0}
+    \tikzset{
+        nd/.style={circle, fill, inner sep=1.1pt},
+        off/.style={color=black!30},
+        sgn/.style={font=\scriptsize, inner sep=1pt},
+        panelcap/.style={font=\footnotesize, align=center},
+    }
+
+    % (a) the circuit
+    \coordinate (n1) at (0,2.2);
+    \coordinate (n2) at (2.2,2.2);
+    \coordinate (n3) at (0,0);
+    \coordinate (n4) at (2.2,0);
+    \draw (n1) to[C, l=$C_1$] (n2);
+    \draw (n3) to[C, l_=$C_2$] (n4);
+    \draw (n1) to[L, l_=$L_1$] (n3);
+    \draw (n2) to[L, l=$L_2$] (n4);
+    \foreach \n/\p in {n1/above left, n2/above right, n3/below left, n4/below right} {
+        \node[nd] at (\n) {};
+    }
+    \node[above left] at (n1) {1};
+    \node[above right] at (n2) {2};
+    \node[below left] at (n3) {3};
+    \node[below right] at (n4) {4};
+    \node[panelcap] at (1.1,-1.25) {(a) floating LCLC box};
+
+    % (b)-(e) the columns of Z: node signs, and grey branches with zero flux.
+    % #1 x, #2 y, #3..#6 signs at nodes 1..4, #7 C style, #8 L style, #9 caption
+    \newcommand{\modepanel}[9]{
+        \begin{scope}[shift={(#1,#2)}]
+            \ctikzset{capacitors/scale=0.45, inductors/scale=0.55}
+            \draw[#7] (0,1.1) to[C] (1.1,1.1);
+            \draw[#7] (0,0) to[C] (1.1,0);
+            \draw[#8] (0,1.1) to[L] (0,0);
+            \draw[#8] (1.1,1.1) to[L] (1.1,0);
+            \foreach \x/\y in {0/1.1, 1.1/1.1, 0/0, 1.1/0} {\node[nd] at (\x,\y) {};}
+            \node[sgn, above left] at (0,1.1) {$#3$};
+            \node[sgn, above right] at (1.1,1.1) {$#4$};
+            \node[sgn, below left] at (0,0) {$#5$};
+            \node[sgn, below right] at (1.1,0) {$#6$};
+            \node[panelcap] at (0.55,-0.55) {#9};
+        \end{scope}
+    }
+    \modepanel{3.6}{1.45}{+}{-}{-}{+}{}{}{(b) harmonic}
+    \modepanel{5.5}{1.45}{-}{+}{-}{+}{}{off}{(c) free}
+    \modepanel{3.6}{-0.75}{-}{-}{+}{+}{off}{}{(d) frozen}
+    \modepanel{5.5}{-0.75}{+}{+}{+}{+}{off}{off}{(e) cyclic}
+\end{circuitikz}
+\end{document}

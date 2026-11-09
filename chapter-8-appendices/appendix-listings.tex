@@ -1,0 +1,17 @@
+% !TEX root = ../thesis.tex
+
+\chapter{Code Listings}\label{apx:listings}
+
+The code of the numerical examples of \cref{sec:numerical_modeling} is collected here.
+
+\lstinputlisting[caption={Diagonalizing a fluxonium in numpy using a discretized phase basis}, label={lst:fluxonium_phase}, linerange={fluxonium_phase-fluxonium_fock}, rangeprefix={\#\ \%\%\ }, includerangemarker=false, firstnumber=0]{code-snippets/chapter_0.py}
+
+\lstinputlisting[caption={Diagonalizing the same fluxonium in numpy using a truncated Fock basis}, label={lst:fluxonium_fock}, linerange={fluxonium_fock-fluxonium_convergence}, rangeprefix={\#\ \%\%\ }, includerangemarker=false, firstnumber=0]{code-snippets/chapter_0.py}
+
+\lstinputlisting[caption={Convergence of the lowest four eigenvalues in the Fock basis and in the phase basis with different finite-difference stencils}, label={lst:fluxonium_convergence}, linerange={fluxonium_convergence-transmon_charge}, rangeprefix={\#\ \%\%\ }, includerangemarker=false, firstnumber=0]{code-snippets/chapter_0.py}
+
+\lstinputlisting[caption={Diagonalizing a transmon in numpy using the charge basis}, label={lst:transmon_charge}, linerange={transmon_charge-end}, rangeprefix={\#\ \%\%\ }, includerangemarker=false, firstnumber=0]{code-snippets/chapter_0.py}
+
+\lstinputlisting[caption={Diagonalizing a transmon in numpy using a periodic phase grid with offset charge}, label={lst:transmon_phase}, linerange={transmon_phase-end}, rangeprefix={\#\ \%\%\ }, includerangemarker=false, firstnumber=0]{code-snippets/chapter_0.py}
+
+\lstinputlisting[caption={Hierarchical diagonalization of a capacitively coupled fluxonium and transmon}, label={lst:coupled_capacitive}, linerange={coupled_capacitive-end}, rangeprefix={\#\ \%\%\ }, includerangemarker=false, firstnumber=0]{code-snippets/chapter_0.py}

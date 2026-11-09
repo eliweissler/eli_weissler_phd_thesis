@@ -1,0 +1,19 @@
+% !TEX root = ../thesis.tex
+Superconducting circuits are a promising technology towards realizing a large scale quantum computer.
+These circuits can protect quantum information against by making the encoded states insensitive to the operators by which noise couples to the circuit.
+However, single-mode circuits, such as the transmon or fluxonium, face a choice.
+They cannot be simultaneously protected against both relaxation and dephasing when built using only the standard components of a Josephson junction, capacitor, and inductor.
+Simultaneous protection requires multi-mode circuits, which are difficult to quantize, simulate, search over, and control.
+This thesis addresses each of these in turn.
+First, we give a general procedure to go from a circuit diagram to a multimode Hamiltonian, precisely characterizing the residual coordinate freedoms.
+% This knob can determine both how the Hamiltonian appears symbolically and how quickly it can be analyzed numerically.
+Second, we enumerate all unique circuits built from those standard elements (Josephson junction, capacitor, and inductor).
+Using a consistent choice of coordinates, we sort them by the structure of their quantized Hamiltonian and explicitly model all unique three node circuits as novel qubits.
+Third, we analyze control of the soft \zp qubit.
+We propose the first two qubit gates for the system: a geometric-phase-based CZ and a CNOT that transfers population via conditional splitting on the single qubit gate $\lambda$ system.
+Fourth, we consider approximate realizations of a $\cos2\phi$ system.
+% , which in its ideal form would break the simultaneous protection restriction of single mode systems.
+We derive a symmetry selection rule that determines, from the circuit alone, whether a particular realization forbids first-order flux noise that precludes simultaneous protection.
+We apply the test to the \zp, KITE, Harmonium, and rhombus circuits and find that the \zp and Harmonium pass the test, while the KITE and rhombus do not.
+Finally, we present GPU-accelerated matrix-free methods for simulating larger multimode circuits.
+We close with suggestions for future work.

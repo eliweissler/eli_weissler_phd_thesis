@@ -1,14 +1,602 @@
 % !TEX root = ../thesis.tex
 
 \chapter{Circuit Enumeration}\label{chp:enumeration}
+
+
+%=========================================================
+\section{Introduction}
+%=========================================================
+
+Superconducting quantum circuits have gained widespread use over the last 25 years as qubits, amplifiers, and transducers~\cite{blaisCircuitQuantumElectrodynamics2021a}. However, most devices have been built from a small library of circuits. The most widely used superconducting qubit today, the transmon, consists of a Josephson junction in parallel with a capacitor. Large-scale industrial efforts in superconducting quantum computing rely on this basic design, building complex systems by repeating the transmon circuit. With the advancements of the last two decades, we are now in a position to design larger multimode circuits, which are necessary to realize systems with intrinsic protection against both decay and dephasing \cite{gyenisMovingTransmonNoiseProtected2021b}.
+
+ Classical nonlinear circuits have been studied for over a century~\cite{fleming_1905,forest_1906}. Large, complex analog and digital circuits are constructed by connecting smaller well-understood modules~\cite{sedra2020}. 
+ These smaller circuits or modules, usually containing fewer than 10 nonlinear elements, are designed for specific functions. 
+In the discovery and design of these modules, three key concepts are closely connected (depicted in \cref{fig:enumeration_vs_synthesis_vs_equiv}):
+\begin{enumerate}
+    \item \textsc{circuit enumeration} uses a combinatorial approach to list all unique circuit configurations, given a set of components. 
+    \item \textsc{circuit synthesis} constructs a circuit that meets performance requirements, subject to constraints.  
+    \item \textsc{circuit equivalence} determines if different circuits perform the identical function.
+\end{enumerate}
+In circuit design, the goal is to synthesize high-performing circuits. This process becomes inefficient if an algorithm suggests circuits equivalent to previously examined ones or cannot explore new topologies.
+
+
+
+
 \begin{figure}[htbp]
-    \centering
-    \includestandalone{chapter-3-enumeration/figs/tikz}
-    \caption{Test figure for this chapter.}
-\end{figure}
-\begin{figure}[htbp]
-    \centering
-    \includestandalone[page=2]{chapter-3-enumeration/figs/tikz}
-    \caption{Test circuit figure for this chapter.}
+\centering 
+\includegraphics[width=0.5\columnwidth]{chapter-3-enumeration/figs/circuit_design_three.pdf}
+\caption{Visual representations of circuit enumeration, synthesis, and equivalence. The aim of our work is to enumerate all unique nonlinear quantum circuits with up to five nodes. The results of our enumeration leverage circuit equivalence and can be used in circuit synthesis tasks to find new qubits and amplifiers. In the circuit synthesis example, we desire a low-pass filter with a certain roll-off and search for an LC circuit that has this property. The illustrated circuit equivalence is defined with respect to the impedance $Z_i$.
+}
+\label{fig:enumeration_vs_synthesis_vs_equiv}
 \end{figure}
 
+
+This chapter enumerates all superconducting quantum circuits with up to five nodes built from capacitors, inductors, and Josephson junctions.\footnote{It is straightforward to include other two-terminal devices such as the quantum phase-slip junction, but it is difficult to include three- or more-terminal devices; see \cref{subsec:elems considered} for 
+more details.}  We consider circuits up to five nodes in size due to computational constraints, though the procedure could be applied to limited subsets of larger circuits. Our enumeration framework has two related components. First, circuit enumeration maps the design space and identifies equivalent circuits, providing a systematic basis for circuit synthesis. Second, we group the quantized circuits into Hamiltonian classes according to their mode and coupling structure. As a proof of concept for enumeration, we search all unique three-node circuits for new superconducting qubits. As a proof of concept for the Hamiltonian classification, we start from a target Hamiltonian and then identify all circuits that realize it, and we use the classification to find circuits whose nonlinear coordinates are necessarily delocalized.
+
+
+
+
+The remainder of this chapter is structured as follows. In \cref{sec:History}, we give brief historical context for circuit enumeration and summarize related work. In \cref{sec:CirEnumAlg}, we describe our circuit enumeration algorithm, which leans on the work of Herber et al.~\cite{Herber:2017aa, herber:2017ab, herber_enhancements_2020} to create a set of topologically unique circuits. In \cref{sec:HamEnum}, we compute the Hamiltonian of each unique circuit and categorize the circuits into Hamiltonian equivalence classes relative to a particular choice of \canonical\ coordinates.
+In \cref{sec:results}, we present the enumeration and classification results and emphasize that distinct circuits can belong to the same Hamiltonian class.
+In \cref{sec:optimization}, we develop a numerical procedure to estimate and optimize circuit performance as a qubit, then apply it to all unique three-node circuits.
+This numerical work leverages several existing circuit quantization software packages~\cite{groszkowskiScqubitsPythonPackage2021a,chittaComputeraidedQuantizationNumerical2022a,kqcircuits,gelyQuCATQuantumCircuit2020,aumannCircuitQOpensourceToolbox2022,rajabzadehAnalysisArbitrarySuperconducting2023,rajabzadehGeneralFrameworkGradientBased2024, Tanamoto_2023}. Finally, in \cref{sec:conc}, we conclude with a discussion of open problems.
+
+%================================================================
+\section{Historical Perspective \& Related work}\label{sec:History}
+%================================================================
+
+In the late 1800s, circuit enumeration became important due to the rapid expansion of telephone networks.
+As Darlington recounts~\cite{Darlington:1984aa}:
+Foster and Campbell~\cite{Campbell:1920aa} were exploring four-port transformer circuits and initially aimed to patent several promising designs. However, Bell Labs advised against patenting designs for which equivalent circuits existed. Upon realizing the vast number of possible circuits (83,539), they instead published the enumeration, which kept these designs open for use.
+
+Circuit enumeration has a long and active history~\cite{Kirchhoff1847a,Kirchhoff1847b,MacMahon:1890aa,Howitt:1931aa,Brune:1931aa,Brune:1931ab,Foster:1932aa,Tellegen:1940aa,RiordanShannon:1942aa,Carlitz:1956aa,Belevitch:1962aa,Mateti:1976aa,Watanabe:1999aa,Herber:2017aa,herber:2017ab,Lohan2019:aa,Morelli2019:aa}. Most work has focused on circuits with two-terminal, passive linear elements, 
+although there has been progress on nonlinear and multiport devices~\cite{Happ1967,Perelson76aa,Reibiger:2013aa}. For example, one set of studies identified previously unknown amplifier circuits~\cite{Bruccoleri2001,Klumperink2001,Shahhosseini2018,Pretl2021}. Other work has explored the integration of machine learning and advanced optimization methods into more traditional approaches to enumeration and synthesis~\cite{Lyu2018,guo_circuit_2019,Zhao2022CircuitSynthesis,Fayazi2023,sirico_use_2023}, with a recent focus on non-redundant representations of the circuit design space~\cite{Gao2025AnalogGenie}.
+
+The systematic study of quantum circuit theory, now often called circuit quantum electrodynamics (circuit QED)~\cite{blaisCircuitQuantumElectrodynamics2021a}, was initiated by \citet{YurkeDenker1984}. 
+This body of work is largely disconnected from classical circuit theory, as analyzing quantum circuits requires the use of Lagrangian and Hamiltonian mechanics, a formalism rarely used in classical electrical engineering~\cite{chuaExplicitTopologicalFormulation1974,bernsteinMethodObtainingCanonical1989,weissHamiltonianFormulationComplete1997}.
+The field of circuit QED has grown rapidly, driven by experimental breakthroughs in the early 2000s~\cite{bouchiat1998,nakamura1999,ManipulatingQuantumState,MartinisNam2002,ChiorescuMooij2003,WallraffSchoelkopf2004} and by continued progress over the past two decades~\cite{Schuster2007,krinner2022,google2025}.
+
+The field has mainly focused on superconducting qubits, driven by their importance in quantum computing. Over the past few decades, the most widely used superconducting-qubit circuit has been a Josephson junction in parallel with a capacitor, namely the Cooper-pair box or transmon~\cite{bouchiat1998,kochChargeinsensitiveQubitDesign2007b}. The transition from the Cooper-pair box to the transmon kept the circuit unchanged but moved to a parameter regime with much lower noise.
+By optimizing the capacitance and Josephson energy, coherence times have increased from nanoseconds~\cite{bouchiat1998}  to median values of $T_1$ and $T_2^{\rm echo}$ of about $0.5$ milliseconds~\cite{tuokkola_methods_2024}. Of course, improvements in materials and fabrication have also contributed substantially to this increase~\cite{place_new_2021, wang_towards_2022,tuokkola_methods_2024}.
+
+
+The majority of superconducting quantum circuits built today are small two-node circuits made of capacitors (\verb|C|), inductors (\verb|L|), and Josephson junctions (\verb|J|). Important examples include the resonator (\verb|LC|), the transmon (\verb|JC|), and fluxonium (\verb|JCL|)~\cite{manucharyanFluxoniumSingleCooperPair2009a,somoroff2023}. While these circuits are often modeled as lumped elements, their physical realization is more complex. For example, the inductor in fluxonium is typically constructed from an array of Josephson junctions, which behaves like a linear inductor only at certain frequencies \cite{manucharyan_thesis:2012}.\footnote{Developing large inductors, not built from junction arrays, is an active area of research~\cite{grunhaupt_granular_2019, peruzzo_surpassing_2020, gupta_low_2024}.} In recent years, larger multimode circuits have gained interest, driven primarily by the subfield of ``protected qubits''~\cite{gyenisMovingTransmonNoiseProtected2021b}. Identifying the most promising multimode superconducting systems remains an open question. Our work provides a systematic way to catalog these possibilities.
+
+Finally, we place our work in the context of related work in superconducting quantum circuit design. Early approaches generally optimized the parameters of a prescribed circuit. For example, \citet{YanSungOliver:2020} consider a generalized flux qubit and analytically explore the design space using approximations. While their analysis captures many previous single-loop qubit designs, it does not straightforwardly apply to general multi-loop, multimode circuits. In Ref.~\cite{LiuWangPan:2023}, Liu et al. use a variational quantum algorithm to optimize the component values of a parallel \texttt{JCL} circuit, where the cost function is a weighted sum of the qubit frequency and anharmonicity.
+
+More recent work has incorporated circuit structure into the design problem by integrating machine learning and other advanced optimization methods into circuit design. \citet{Menke:2021aa} use a closed-loop swarm optimization algorithm to optimize desired circuit properties, given a circuit topology. \citet{CardLopeSanz2023} employ genetic algorithms to design noise-resilient qubits with particular selection rules. In related work by some of the same authors, this algorithm is used to design a new four-node qubit called the ``Difluxmon''~\cite{garcia-azorin_2024}. \citet{GraphQ_PrincetonMM_2024} use graph-based machine learning methods to address the circuit synthesis problem. These methods demonstrate the value of searching over circuit structure, but they generally explore restricted or heuristically generated subsets of the possible circuit space.
+
+Parallel research has developed increasingly powerful methods for optimizing circuits once a topology has been selected, including gradient-based and differentiable optimization of circuit parameters \cite{rajabzadehGeneralFrameworkGradientBased2024, Wang2025SuperGrad}, circuit decomposition and classification \cite{smitham2024reciprocallumpedelementsuperconductingcircuits}, and automated optimization or inverse design of physical device geometries \cite{Shanto2024SQuADDS,Eriksson2025QDesignOptimizer,Seidel2026InverseDesign,Peng2026SQChipEM}. Recent work has also approached the inverse design directly at the Hamiltonian level by constructing circuits that approximate a desired nonlinear potential \cite{Hajihosseini2025Trainmon}.
+
+Circuit enumeration addresses a distinct and complementary part of this inverse-design problem. Previous work has also considered the uniqueness and organization of superconducting circuit design spaces~\cite{rajabzadehGeneralFrameworkGradientBased2024,smitham2024reciprocallumpedelementsuperconductingcircuits}, but generally without attempting a complete enumeration. Our approach seeks to catalog the design space itself in the style of Foster and Campbell: we construct the complete set of unique circuits with a specified number of nodes and organize them into Hamiltonian classes. The resulting database provides a discrete search space that can be combined with existing optimization methods, giving future circuit synthesis efforts a concrete starting point for identifying and comparing candidate designs.
+
+% ========================================================
+\section{Circuit Enumeration Algorithm}\label{sec:CirEnumAlg}
+% ========================================================
+
+Our enumeration procedure consists of two main steps:
+\begin{enumerate}
+    \item {\em Combinatorial enumeration.} \\ We represent circuit topologies using a set of unique undirected graphs. Each edge represents a location for a two-terminal circuit component, like a capacitor. For every topology, we enumerate all possible assignments of components to these edges.
+    \item {\em Reduction of equivalent configurations.} \\ The combinatorial set generated in step 1 contains many identical circuits. We construct a minimal set of ``unique'' circuits. 
+\end{enumerate}
+The remainder of this section details these two steps, with a graphical summary provided in \cref{fig:sample_reduction}. Our procedure builds on the work of Herber et al. \cite{Herber:2017aa, herber:2017ab, herber_enhancements_2020}.
+
+\begin{figure*}[thbp]
+\centering 
+\includegraphics[width=0.99\textwidth]{chapter-3-enumeration/figs/enumeration_summary.pdf}
+\caption{Example circuit enumeration and reduction for three-node circuits. {\bf Enumeration:} (Step 1) For a given number of nodes, select a base graph. For $n=3$ there are two options, and for this figure, we choose the Delta topology. (Step 2) Given the Delta topology, we allow each edge to be one of $m$ components. In this example, the edge can be either a capacitor, inductor, or Josephson junction. In general, we also allow combinations of the three basic elements so the edges could be in the set \{\texttt{C}, \texttt{J}, \texttt{L}, \texttt{CL}, \texttt{JL}, \texttt{JC}, \texttt{JCL}\}. (Step 3) We enumerate all possible $m$-ary strings. In this example, there are 27 possible configurations. {\bf Reduction:} Circuits that are eliminated at each step are grayed out. (Step 1) We remove any circuit that does not contain a \texttt{J}. (Step 2) We remove circuits that have linear components in series because there is an equivalent circuit with one fewer node. (Step 3) Of the remaining circuits, several are equivalent, so we perform a graph isomorphism check to remove equivalent circuits. (Step 4) Four unique nonlinear circuits remain out of the original 27.}
+\label{fig:sample_reduction}
+\end{figure*}
+
+\begin{figure}[htbp]
+\centering 
+\includegraphics[width=\colfigwidth]{chapter-3-enumeration/figs/basegraphs.pdf}
+\caption{The set of ``base graphs,'' or non-isomorphic, connected, undirected graphs with the specified number of nodes. Each represents a unique circuit topology.  All except for the fully connected five-node graph can be drawn as a planar graph. Acyclic graphs, or ``trees,'' are highlighted in blue.}\label{fig:basegraph_grid}
+\end{figure}
+
+\subsection{Combinatorial Enumeration}
+\label{sec:comb_enum_subsec}
+
+Our combinatorial enumeration generates all circuits with up to $n$ nodes built from linear capacitors (\verb|C|), linear inductors (\verb|L|), and Josephson junctions (\verb|J|). We choose \verb|C|, \verb|J|, and \verb|L| because most nonlinear superconducting circuits are built exclusively from these three elements. Throughout this chapter, we will assume that Josephson junctions always have an accompanying intrinsic capacitance. While not strictly necessary for the combinatorial enumeration, this assumption is physically accurate and simplifies the analysis of multimode circuits. In superconducting-circuit diagrams, Josephson junctions with the junction capacitance omitted or shown explicitly are conventionally denoted, respectively, by
+\begin{equation}
+\begin{tikzpicture}[line width=0.8pt,baseline=(current bounding box.center),scale=0.7]
+\pic at (0,1.1) {jj};
+\node[anchor=west] at (1.25,1) {\small no junction capacitance,};
+\pic at (0,0) {jjbox};
+\node[anchor=west] at (1.25,0) {\small junction capacitance.};
+\end{tikzpicture}
+\end{equation}
+We only use the latter in this work.
+
+
+We define unique circuit topologies by the minimal set of connected, undirected, nonisomorphic graphs, which we obtain from Brendan McKay's combinatorial database \cite{McKay_Combinitorial_Data}. We refer to these graphs as ``base graphs'' and show them in \cref{fig:basegraph_grid}. There are 1, 2, 6, and 21 such topologies for circuits with two, three, four, and five nodes, respectively. The count rises to 112 for six nodes, 853 for seven nodes, and 11,117 for eight nodes.
+
+Next, we generate all possible assignments of circuit elements to the edges of each base graph. For a base graph with $N_E$ edges and $m$ two-terminal components, there are $m^{N_E}$ such assignments, with each configuration naturally represented by a base-$m$ string of length $N_E$. Allowing for parallel combinations of the three fundamental elements, we define $m = 7$ allowed edge types. Their string representations are
+\begin{equation}
+\verb|C|,\, \verb|J|,\, \verb|L|,\, \verb|JC|,\, \verb|CL|,\, \verb|JL|,\, \textrm{and}\, \verb|JCL|.
+\end{equation}
+
+For example, three-node circuits utilize two base graphs (containing two and three edges, respectively), yielding $7^3 + 7^2 = 392$ total configurations. Similarly, summing the contributions across all base graphs for four and five nodes yields 139,944 and 338,332,113 raw assignments. Many of these configurations are equivalent; reducing them to a minimal set of ``unique'' circuits is discussed in \cref{sec:equiv_reduction}.
+
+
+\subsection{Reduction of Equivalent Configurations}
+\label{sec:equiv_reduction}
+To construct a minimal set of ``unique'' nonlinear circuits, we remove configurations that are fully linear, contain reducible series linear components, or are otherwise topologically equivalent to another configuration. These three steps are illustrated in \cref{fig:sample_reduction}.
+
+\subsubsection{Fully Linear Circuits}
+Linear circuits are well studied, so our focus is only on nonlinear circuits. Although quantum information can be encoded in a linear circuit, like an LC resonator, nonlinear interactions are needed for universal gates or for encoding into a bosonic code~\cite{ofek2016,ni2023,sivak2023}. We therefore discard any configuration that lacks a Josephson junction --- see \cref{fig:sample_reduction} step (1).
+
+\subsubsection{Series Linear Components}
+Two identical linear elements, such as capacitors or inductors, connected in series are equivalent at the outer terminals to a single element. A simple example appears in reduction step (2) of \cref{fig:sample_reduction}, where a circuit with two series capacitors is discarded because it is equivalent to the transmon circuit.
+
+This extends naturally to $n$ linear elements of the same type meeting at a single node. They can be reduced to an equivalent network on the outer terminals alone. The case $n=3$ is the familiar star-mesh, or $\Delta$-Y, transformation \cite{kennelly_delta_wye_1899, rosen_new_1924}. In the Lagrangian formalism, these star configurations appear as non-dynamical modes. As shown in \cref{app:details:islands}, eliminating those modes from the circuit Lagrangian exactly recovers the generalized star-mesh transformation.
+
+
+We therefore discard any circuit that contains one of these reducible star configurations, since its essential dynamics are already captured by a circuit with fewer nodes. 
+
+
+\subsubsection{Component-like Isomorphism}
+Two circuit diagrams represent the same physical system if they differ only by a permutation of node labels. For example, in reduction step (3) of \cref{fig:sample_reduction}, the combinations \texttt{CJJ}, \texttt{JCJ}, and \texttt{JJC} all describe the same circuit because of the rotational symmetry of the underlying $\Delta$ base graph. We therefore retain one configuration, \texttt{CJJ}.
+
+To identify these topological equivalences systematically, we test for isomorphism using a ``component graph'' representation~\cite{Herber:2017aa}. In a component graph, each circuit element and each circuit node is mapped to a colored vertex. Elements of the same type share a color, while nodes are colored by the number of elements connected to them. If two circuits are topologically equivalent, their component graphs are isomorphic \cite{Herber:2017aa, herber:2017ab, herber_enhancements_2020}.
+
+While graph isomorphism can be computationally expensive in general, the small graphs considered here make this approach practical. As illustrated in \cref{fig:obvious_isomorphism}, isomorphism between component graphs provides a mathematical description of the underlying circuit symmetries.
+
+
+We perform pairwise isomorphism checks with the Python package \texttt{NetworkX}~\cite{hagberg2008exploring_networkx}. To reduce the search cost, we compare only circuits with the same base graph and the same component counts, for example, 2 \texttt{C}, 1 \texttt{L}, and 1 \texttt{J}. \Cref{app:psuedo} gives pseudocode for constructing the resulting nonisomorphic set. 
+
+
+\begin{figure}[htbp]
+\centering 
+\includegraphics[width=\colfigwidth]{chapter-3-enumeration/figs/isomorphism.pdf}
+\caption{Two equivalent circuits (top), along with their component graph representations (bottom). Each circuit component and node in the circuit diagram is represented by a colored vertex. Different circuit components are assigned different colors (capacitor $\rightarrow$ blue, Josephson junction $\rightarrow$ purple). Each node in the circuit is assigned a color based on its degree (1 connection $\rightarrow$ pink, 3 connections $\rightarrow$ orange). An isomorphism exists from $G_1 \rightarrow G_2$ with vertex mapping $\{1 \rightarrow 5, 2 \rightarrow 4, 3 \rightarrow 3, 4 \rightarrow 2, 5 \rightarrow 1, 6 \rightarrow 6, 7 \rightarrow 7\}$.} 
+\label{fig:obvious_isomorphism}
+\end{figure}
+
+
+%=================================================
+\section{Categorization by Hamiltonian Class}\label{sec:HamEnum}
+%=================================================
+
+We want to study the quantum properties of our enumerated circuits, so we need a Hamiltonian for each circuit. We follow the standard procedure: begin with a circuit Lagrangian and obtain the Hamiltonian using a Legendre transform \cite{devoret1995,voolIntroductionQuantumElectromagnetic2017,rasmussenSuperconductingCircuitCompanionan2021a}. Crucially, this procedure requires a choice of coordinates.
+
+
+The circuit Lagrangian is most straightforwardly expressed in terms of node flux variables $\Phi = (\phi_1, \phi_2, \ldots,\phi_n )^T$:
+\begin{align}\label{eq:node_lagrangian_paper}
+    \mathcal{L}(\Phi, \dot \Phi) = \frac{1}{2}\dot\Phi^TC\dot\Phi &- \frac{1}{2}\Phi^TL^*\Phi  - E_{JJ}(\Phi) \, ,
+\end{align}
+where $\dot{\Phi}$ is the time derivative of $\Phi$, $C$ is the capacitance matrix, $L^*$ is the inverse inductance (susceptance) matrix, and $E_{JJ}(\Phi)$ is the Josephson energy. 
+%Here, we have neglected charge offsets and external flux.
+When defining Hamiltonian classes, we treat charge offsets and external fluxes as operating-point parameters. Including their continuous values would turn the finite structural classification into a continuous one. We therefore set them to zero for the classification and reintroduce them in the numerical analysis.
+
+While node-flux variables provide a straightforward basis for writing the Lagrangian, they are rarely the best choice for understanding the dynamics.
+To understand why, we can compare a grounded and an ideal floating transmon.
+A grounded transmon has one non-ground node flux, which directly gives the phase difference across the Josephson junction.
+A floating transmon is instead described by two node fluxes, $\phi_1$ and $\phi_2$, even though its internal dynamics depend only on their difference, $\theta =\phi_1-\phi_2$.
+Introducing the common coordinate $\phi_+=(\phi_1+\phi_2)/2$ separates the internal transmon coordinate from collective motion of the two islands.
+Thus, even in this simple example, changing coordinates isolates the physically relevant degree of freedom. Below, we apply this idea systematically to separate mode types and minimize intermode coupling, which provides the coordinates used to define Hamiltonian classes.
+
+In general, we can define a new set of coordinates $\tilde{\Phi}$ via a linear transformation of node flux variables, $\tilde{\Phi} = Z^{-1}\Phi$. Substituting $\Phi = Z\tilde{\Phi}$ into \cref{eq:node_lagrangian_paper} gives the Lagrangian in the new coordinates.
+\begin{align}\label{eq:tilde_lagrangian_paper}
+    \mathcal{L}(\tilde{\Phi},\dot{\tilde{\Phi}})
+    &=
+    \frac{1}{2}\dot{\tilde{\Phi}}^T \tilde{C} \dot{\tilde{\Phi}}
+    -
+    \frac{1}{2}\tilde{\Phi}^T \tilde{L}^* \tilde{\Phi}
+    -
+    E_{JJ}(Z\tilde{\Phi})\,.
+\end{align}
+The quadratic terms are described by the transformed matrices $\tilde{C} = Z^T C Z$ and $\tilde{L}^* = Z^T L^* Z$. This Lagrangian can then be transformed to a Hamiltonian via the Legendre transform.
+
+% Just split this paragraph into two
+A single Hamiltonian can describe different operating regimes of the same circuit. For example, the Hamiltonian $E_C\, n^2 - E_J \cos \theta$ describes both the transmon and the Cooper-pair box for different ratios $E_J/E_C$.
+
+Distinct circuits, however, can also share the same Hamiltonian structure.
+Consider the topologically distinct circuits in \cref{fig:LC_three_circuits}, which reduce to the same Hamiltonian. With an appropriate choice of coordinates, each circuit has one dynamical degree of freedom, a kinetic term proportional to $q^2$, and a potential term proportional to $\varphi^2$. When circuits share this structure, relative to a specific choice of ``\canonical''~coordinates, we say that they belong to the same ``Hamiltonian class''.
+
+\begin{definition}[Hamiltonian Class]\label{def:ham_class}
+A set of Hamiltonians that share the same functional form, up to parameter values.
+\end{definition}
+
+Consequently, we denote Hamiltonian classes without parameters, e.g., for the transmon the class is $n^2 - \cos \theta$.
+The Hamiltonian class of a circuit depends on the choice of ``\canonical~coordinates''.
+\begin{definition}[\Canonical~Coordinates]\label{def:ref_coord}
+For a set of circuits, \canonical~coordinates are a choice of valid coordinates for every circuit in the set. 
+\end{definition}
+The \canonical~coordinates thus establish a mapping from circuits to Hamiltonian classes. Different coordinate constructions can merge or split classes, and thus yield fewer or more classes.
+
+
+Hamiltonian classes can aid circuit design by providing a bias-independent classification of mode and coupling structure. We present two applications. First, they enable an inverse lookup from a desired Hamiltonian structure to the circuit topologies that realize it. Circuits within the same class can nevertheless access different parameter regimes and present different implementation tradeoffs, as explored in \cref{sec:lookup}. Second, as shown in \cref{sec:delocalized}, the classification reveals topology-level constraints that can force genuinely collective, delocalized nonlinear coordinates.
+
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\colfigwidth]{chapter-3-enumeration/figs/LC_single_mode.pdf}
+\caption{Three circuits with the same Hamiltonian class under the coordinates $\varphi_a = \phi_2-\phi_1$, $\varphi_b = \phi_2 - \phi_3$, and $\varphi_c =  \phi_4-\phi_3 + \phi_2-\phi_1$. With $C=C_1C_2/(C_1+C_2)$ and $L=L_1+L_2$, they also have identical equations of motion.}
+\label{fig:LC_three_circuits}
+\end{figure}
+
+
+In order to categorize circuits into Hamiltonian classes, we introduce an algorithm to generate \canonical~coordinates. We require it to return the same coordinates for circuits that differ only by a relabeling of nodes, that is, for circuits with isomorphic component graphs. Otherwise, Hamiltonian classes would depend on which circuit diagram is chosen to represent a given unique circuit. Additionally, we choose to consider only coordinates that are independent of circuit parameters. This ensures each unique circuit has a single choice of coordinates. The procedure consists of three steps, described in more detail in \cref{app:var_trans}:
+
+\begin{enumerate}
+    \item {\em Mode separation.} \\  For a circuit containing capacitors, inductors, and Josephson junctions (with intrinsic capacitance\footnote{We discuss the open question of treating circuits without intrinsic junction capacitance in \cref{app:var_trans}.}), we separate coordinates into six mode types, shown in \cref{fig:variable_kinds}.
+    Compact variables (those with a periodic potential) are required to form an integer lattice with charge quantized in units of Cooper pairs.
+    \item {\em Non-dynamical mode removal.} \\ We eliminate coordinates corresponding to constraints or redundancies, yielding an invertible capacitance matrix and a minimal set of dynamical variables.
+    \item {\em Coupling minimization.} \\ Within the constraints of the previous two steps, we minimize intermode coupling, while keeping dynamical coordinates independent of circuit parameters.\footnote{Allowing parameter-dependent transformations can eliminate linear coupling at the cost of increased nonlinear coupling \cite{rajabzadehAnalysisArbitrarySuperconducting2023}.} We define ``minimizing coupling'' as maximizing the number of strictly zero intermode coupling terms, first for nonlinear terms and then for linear terms.
+    We compute a provably optimal solution using a custom solver built on \textsc{Singular} \cite{Singular_2024} and the \textsc{Z3} SMT solver \cite{DeMouraBjornerZ3_2008}. This step can be viewed as a linear change of coordinates within each dynamical subspace.
+\end{enumerate}
+ 
+
+
+
+\begin{figure}
+\centering 
+\includegraphics[width=\colfigwidth]{chapter-3-enumeration/figs/mode_types.pdf}
+\caption{Types of dynamical (top) and non-dynamical (bottom) modes present in superconducting circuits of pure capacitors, pure inductors, and Josephson junctions with intrinsic capacitance. Cartoons of potential energy are shown for each mode type, with a corresponding ``particle'' moving within the potential. Here and throughout we will denote harmonic and extended modes using $q,\varphi$ and compact modes using $n, \theta$. The compact mode has periodic boundary conditions, shown by the particle split between $\theta=-\pi$ and $\theta=\pi$.}
+\label{fig:variable_kinds}
+\end{figure}
+
+
+
+
+We now illustrate how the reference-coordinate selection minimizes coupling. For the two circuits in \cref{fig:diff_class_example}, the algorithm produces $\varphi_1 = \phi_1 - \phi_3$ and $\varphi_2 = \phi_2 - \phi_3$, where $\phi_i$ is the flux variable at node $i$. The resulting Hamiltonian classes for circuits (a) and (b) are
+\begin{subequations}
+\begin{align}
+    q_{1}^{2} +\phantom{q_{1} q_{2}+} &q_{2}^{2} + \varphi_{1}^{2} + \varphi_{1} \varphi_{2} + \varphi_{2}^{2} + \cos{\varphi_{1} } + \cos{\varphi_{2}} \\
+    q_{1}^{2} + q_{1} q_{2} + &q_{2}^{2} + \varphi_{1}^{2} + \varphi_{1} \varphi_{2} + \varphi_{2}^{2} + \cos{\varphi_{1} } + \cos{\varphi_{2}}.
+\end{align}
+\end{subequations}
+The extra coupling in circuit (b) comes directly from the extra capacitor between nodes 1 and 2. If we had instead chosen $\varphi_2 = \phi_2 - \phi_1$, both circuits would fall into the same Hamiltonian class
+\begin{align} \label{eq:extraHform}
+{q}_{1}^{2} +& {q}_{1} {q}_{2} + {q}_{2}^{2} + {\varphi}_{1}^{2} + {\varphi}_{2}^{2} + \cos{\left({\varphi}_{1} - {\varphi}_{2} \right)} +  \cos{{\varphi}_{1}} \, .
+\end{align}
+This alternative choice replaces linear coupling, ${\varphi_1}{\varphi_2}$, with nonlinear coupling, $\cos({\varphi_1}-{\varphi_2})$. Our procedure prioritizes minimizing nonlinear coupling and then, within that constraint, minimizing linear coupling.
+
+\begin{figure}[htbp]
+\centering 
+\includegraphics[width=\colfigwidth]{chapter-3-enumeration/figs/diff_class_example.pdf}
+\caption{Two circuits from classes (a) 3-11 and (b) 3-12 in \cref{tab:comparison_by_var} that have equivalent mode structures if a different choice of coordinates is used.}
+\label{fig:diff_class_example}
+\end{figure}
+
+
+
+
+ 
+%===================================================
+\section{Enumeration Results}\label{sec:results}
+%===================================================
+
+\Cref{tab:overview} summarizes our enumeration results by number of nodes. The second column shows a combinatorial explosion of the naive circuit count from \cref{sec:comb_enum_subsec}. The third column counts unique circuits using methods from \cref{sec:equiv_reduction}, showing that the numbers are far smaller than naive counting suggests. We show similar summary statistics in \cref{app:additional_results} as a function of the number of junctions, compact variables, and phase loops in a circuit.
+
+\begin{table}[htbp]
+\setlength{\tabcolsep}{13pt}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+Nodes      &  Circuits&  Unique Circuits  &  Classes \\ \toprule
+2                  & 7          &   4                  & 2  \\ \midrule
+3                  & 392        &   80                 &  19 \\ \midrule
+4                  & 139,944    &   10,982             &  232 \\\midrule
+5             & 338,332,113  &  7,976,949          &  4893 \\\bottomrule
+\end{tabular}
+    \caption{
+    Number of circuits and Hamiltonian classes for circuits with two to five nodes. The first column gives the number of nodes. The second gives the naive circuit count, $7^{N_E}$, summed over all base graphs for that node number (see \cref{fig:basegraph_grid}). For three-node circuits, this gives $7^3 + 7^2 = 392$ from the two base graphs. The third column gives the number of unique circuits containing at least one Josephson junction. Because the naive count includes many equivalent circuits, the reduction from column 2 to 3 is large. The fourth column gives the number of Hamiltonian classes, namely distinct combinations of mode types and inter-mode couplings identified from the unique circuits.}\label{tab:overview}
+\end{table}
+
+This combinatorial enumeration defines the circuit design space. However, unique circuits can behave similarly. In the fourth column of \cref{tab:overview}, we use the transformation developed in \cref{sec:HamEnum} to group circuits into Hamiltonian classes that capture these shared behaviors. Recall that the number of Hamiltonian classes depends on the choice of \canonical\ coordinates, so the counts reported here correspond to our specific construction.
+For circuits with up to five nodes, this technique reduces millions of unique circuits to fewer than five thousand Hamiltonian classes. A full database of these circuits is available through \cite{weissler_2026_zenodo_data}.
+
+
+
+\begin{table*}[htbp]
+%\includestandalone[mode=buildnew, width=0.99\textwidth]{results_table}\\[0.0cm]
+\includegraphics[width=0.99\textwidth]{chapter-3-enumeration/figs/results_table.pdf}\\[0.0cm]
+    \includegraphics[width=0.99\textwidth]{chapter-3-enumeration/figs/Hclasses.pdf}\\[0.0cm]
+    \vspace{0.1cm}
+    \hrule
+    \vspace{0.1cm}
+    \caption{Hamiltonian classes (top) and corresponding circuits (bottom) up to 3 nodes in size. Compact variables are denoted by $n, \theta$, while extended and harmonic variables are denoted by $q, \varphi$. Grayed-out circuit elements may be included or excluded without changing the class. Because each Josephson junction includes a small intrinsic capacitance, most optional elements correspond to capacitors placed in parallel with junctions. Optional inductors, such as those in classes $3-5$, $3-6$, $3-11$, and $3-12$, are present when the circuit has no compact modes and already contains a series inductor across the specified branch. Likewise, the optional capacitors in classes $3-2$, $3-4$, and $3-16$ occur when that branch already contains a series capacitor.}
+    \label{tab:comparison_by_var} 
+\end{table*}
+
+
+
+In \cref{tab:comparison_by_var}, we list the Hamiltonian classes for two- and three-node circuits.\footnote{A similar table of Hamiltonian classes for four- and five-node circuits is available on our repository \cite{sircuitenum_repo}.} Each class is labeled by its node number and class number, $[\rm Nodes]-[\rm Class]$. The ``Hamiltonian Class'' column gives the Hamiltonian with coefficients omitted, since the coefficients vary across circuits. The ``Compact,'' ``Extended,'' and ``Harmonic'' columns list the mode types explicitly, although they can also be inferred from the Hamiltonian.
+
+Two-node circuits are either fluxonium-like, with one extended mode, or transmon-like, with one compact mode. Three-node circuits fall into 19 classes. Most of them, classes 3-1 through 3-14, can be understood as individual or linearly coupled transmon-like, fluxonium-like, or LC-like systems. The remaining classes exhibit nonlinear coupling. They include all circuits with three Josephson junctions, as well as the two-junction Bifluxon circuit 3-16 \cite{kalashnikov_bifluxon_2020}.
+
+
+The ``\# Circuits'' column gives the number of circuits in each class. The corresponding diagrams appear in the bottom panel, with gray elements indicating optional elements that do not change the class. Because we include a small intrinsic capacitance for every Josephson junction, most optional elements are capacitors in parallel with junctions. The optional inductors in classes $3-5$, $3-6$, $3-11$, and $3-12$ arise when the circuit has no compact modes and already contains a series inductance across the specified branch. The optional capacitors in classes $3-2$, $3-4$, and $3-16$ similarly arise when there is already a series capacitance across the specified branch.
+
+The three-node circuits in \cref{tab:comparison_by_var} suggest three design principles. First, the low-node design space is far smaller than raw combinatorics suggests. Many apparently different circuit diagrams collapse to the same behavior. Second, the types of modes present are determined by the inductive portion of each circuit (e.g., \texttt{J}, \texttt{L}). In three-node circuits, capacitors only modify the ``masses'' of the individual modes and alter the intermode charge coupling, although for larger circuits they can also convert frozen modes into harmonic modes. Finally, most classes can be viewed as coupled transmon-like, fluxonium-like, or LC-like modes. Only one three-node class, $3-16$, features a Hamiltonian that cannot be straightforwardly decomposed into these component modes, with respect to our reference coordinates. 
+
+%------------------------------------
+\subsection{Inverse Lookup: Find all Circuits in a Class}\label{sec:lookup}
+%------------------------------------
+
+As an application of Hamiltonian classification, we consider an inverse-lookup problem. Given an existing circuit (or equivalently a target Hamiltonian), find all circuits within the same Hamiltonian class. We consider two four-node examples, the Difluxmon circuit \cite{garcia-azorin_2024} and the \zp\ circuit \cite{Gyenis_zero_pi_2021a}, which is a protected qubit. The Difluxmon class has similar membership rules to the three-node circuits, while \zp\ is an example of a system that exhibits emergent dynamics when imposing circuit symmetry.
+
+\begin{figure}[htbp]
+\centering 
+\includegraphics[width=\colfigwidth]{chapter-3-enumeration/figs/difluxmon_circuits.pdf}
+\caption{(Left) Topologically equivalent circuits to the Difluxmon circuit \cite{garcia-azorin_2024}, up to trivial rotations and reflections. (Right) All circuits in the same Hamiltonian class as the original Difluxmon circuit. Gray elements can be added or removed without changing the Hamiltonian class and represent additional capacitances and inductances between nodes with existing capacitive or inductive paths.} \label{fig:difluxmon_isomorphism}
+\end{figure}
+
+In \cref{fig:difluxmon_isomorphism}, we show all circuits in the same Hamiltonian class as the Difluxmon circuit. Our framework identifies two distinct inductive circuits, with many possible capacitor placements. As with the three-node Hamiltonian classes, the optional elements represent capacitances and inductances across branches that already have a capacitive or inductive path, respectively. In this sense, the Difluxmon can be viewed as a specific instantiation within the specified Hamiltonian class, with deliberately small capacitances on all but two circuit branches.
+
+
+
+We now turn our attention to the \zp\ circuit, which has the same base graph as the Difluxmon, but with one inductor and one capacitor interchanged. Assuming identical pairs of capacitors, inductors, and junctions, its Hamiltonian is
+\begin{equation}\label{eq:zp_ham}
+    H_{0-\pi} = E_{C1} n_1^2 + E_{C2} q_2^2 + E_L \varphi_2^2 - 2E_J \cos \theta_1 \cos \varphi_2 \, ,
+\end{equation}
+ignoring a completely decoupled harmonic mode. This system is intrinsically protected against decay and dephasing when $E_{C1}/E_J$ is small and $E_{C2}/E_L$ is large \cite{paolo_control_2019}. In \cref{fig:copycat_qubits}, we examine all three- and four-node circuits that belong to this Hamiltonian class.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\colfigwidth]{chapter-3-enumeration/figs/zero_pi_regions.pdf}
+\caption{(a) All circuits in the same Hamiltonian class as the original \zp\ circuit. Gray capacitors must be included or excluded in pairs across identical elements to preserve the required symmetry. For the second class, which contains the Bifluxon circuit \cite{kalashnikov_bifluxon_2020}, the series inductors may be excluded if the diagonal inductor is included. (b) Parameter regions accessible to four different capacitive layouts of the class containing the original \zp\ circuit, assuming junction charging energies of 5--10 GHz and capacitor charging energies of 0.05--5 GHz. Only the original \zp\ circuit (top left) achieves the small $E_{C1}$ and large $E_{C2}$ required for protection. 
+The top right circuit has no dedicated capacitors, but both modes still have charging energy because we include the junction's intrinsic capacitance. The Bifluxon-class circuits, not depicted in (b), can achieve every combination of $E_{C1}$ and $E_{C2}$, except for the protected small $E_{C1}$ and large $E_{C2}$ case.}\label{fig:copycat_qubits}
+\end{figure}
+
+
+The standard \zp\ circuit is shown in \cref{fig:copycat_qubits}(a). Through our enumeration, we find two distinct inductive circuits in the same Hamiltonian class. Each inductive circuit can have many possible capacitor placements. The second inductive circuit corresponds to the Bifluxon circuit \cite{kalashnikov_bifluxon_2020}. While these circuits share the same mode structure, their additional capacitors set drastically different effective parameters $E_{C1}$ and $E_{C2}$. Moreover, depending on the capacitive configuration, an additional harmonic mode can also emerge, as in the original \zp\ circuit. As shown in \cref{fig:copycat_qubits}(b), only the original \zp\ circuit reaches the regime of small $E_{C1}$ and large $E_{C2}$ required for protection.
+
+This example also highlights a broader methodological point. Many proposed multimode protected qubits, including the \zp\ circuit, rely on highly symmetric parameter regimes in which pairs of capacitances, inductances, and Josephson energies are equal, causing coupling terms that depend on the difference of those parameters to go to zero  \cite{Gyenis_zero_pi_2021a, kalashnikov_bifluxon_2020, kitaev_protected_2006, smithSuperconductingCircuitProtected2020b}. In the general enumeration, each circuit element is treated as an independent symbolic parameter. Here, however, we imposed exact symmetry between matching capacitors, inductors, and junctions to capture this decoupling. Our coordinate-generation algorithm is capable of identifying these special regimes where symmetric parameters simplify the dynamics by decoupling certain modes.
+
+
+
+
+
+
+\subsection{Identification of Delocalized Coordinates}\label{sec:delocalized}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\colfigwidth]{chapter-3-enumeration/figs/ind_cir_three.pdf}
+    \caption{Topological origins of localized and delocalized extended coordinates. (a) The three-node Josephson junction tree and (b--d) three possible single-branch inductive modifications, with each added branch shown in teal. (b) A loop-completing junction nonlinearly couples two compact coordinates. (c) An inductive path in parallel with a single junction converts one compact coordinate into an extended coordinate that can remain localized to that junction. (d) An inductor completing a mixed loop instead creates an extended coordinate that must be delocalized across both junctions. This is the inductive skeleton of Hamiltonian class $3-16$.}
+    \label{fig:ind_cir_three}
+\end{figure}
+
+
+
+\begin{figure*}[htbp]
+\centering
+\includegraphics[width=\textwidth]{chapter-3-enumeration/figs/ind_cir_table.pdf}
+\caption{Catalog of irreducible inductive skeletons up to five nodes in size with at least one necessarily delocalized extended coordinate. No displayed junction is shunted by an inductor-only path, so all extended coordinates are delocalized (see \cref{app:skeleton}). The skeletons are separated by their numbers of compact and extended modes. There is one three-node skeleton, four four-node skeletons, and seventeen five-node skeletons. We omit skeletons containing shunted junctions, nodes connected only to inductors, or all-junction or all-inductor loops. We also omit circuits that become disconnected when one node is removed. Extra capacitors may create harmonic modes and couplings but do not modify the nonlinear coordinate structure.}
+\label{fig:nontrivial_classes}
+\end{figure*}
+
+The Hamiltonian classes provide a compressed catalog of the enumerated circuits, but they can reveal more than redundancy. 
+Some circuit topologies force an extended coordinate to be \emph{delocalized} over several circuit components.
+Remarkably, this can be identified directly from the \emph{inductive skeleton}---the subcircuit formed only by junctions and inductors---before any capacitances or component values are chosen.
+
+We call an extended nonlinear coordinate \emph{localized} if it can be chosen as the phase difference across a single Josephson junction. The three-node circuits in \cref{fig:ind_cir_three} illustrate when this is and is not possible.
+Starting from the two-junction tree in (a), adding a junction closes a junction-only loop and couples the two compact coordinates, as shown in (b). Adding an inductor in parallel with one junction instead converts one compact coordinate into an extended coordinate that remains localized to that junction,
+as in (c). In contrast, closing a loop containing two junctions and an inductor, as in (d), produces an extended coordinate that necessarily involves both
+junctions. Hence the coordinate is delocalized. This is the inductive skeleton of Hamiltonian class $3-16$, which contains the Bifluxon circuit~\cite{kalashnikov_bifluxon_2020}.
+
+The same loop structure gives a general criterion. A necessarily delocalized coordinate requires a mixed loop containing multiple junctions and at least one inductor. If no individual junction is shunted by an inductor-only path, such a loop is also sufficient.
+ In \cref{app:skeleton}, we derive the general criterion for any circuit to have a delocalized extended nonlinear coordinate (or coordinates). We give a procedure to determine the exact count $\delta$ for a circuit with any number of nodes. Importantly, $\delta$ depends only on the inductive skeleton.
+
+
+After removing inductively shunted junctions and other redundancies (see \cref{app:skeleton}), we obtain one three-node, four four-node,
+and seventeen five-node irreducible-skeletons with necessarily delocalized
+coordinates. These are circuits where all extended modes are delocalized, and they are shown in \cref{fig:nontrivial_classes}. Thus the Hamiltonian categorization can highlight circuits with collective nonlinear degrees of freedom without constructing and diagonalizing every capacitive realization.
+
+Delocalization does not by itself imply noise protection. 
+We have already seen that the Bifluxon is a three-node example of a protected qubit with coordinate delocalization. 
+It turns out that the \zp\ circuit is a four-node example as well.  
+In symmetric coordinates, its Josephson potential is $-2E_J\cos\theta_1\cos\varphi_2$. Equivalently, the two physical junction phases involve the combinations $\theta_1\pm\varphi_2$.
+Its inductive skeleton is shown in \cref{fig:nontrivial_classes} and \cref{fig:copycat_qubits}. This collective nonlinear structure is one reason that delocalized skeletons provide a natural subset of circuits to investigate when searching for protected qubits.
+
+
+
+% ========================================================
+\section{Searching For New Qubits}\label{sec:optimization}
+% =========================================================
+
+The main use for our superconducting circuit enumeration is to enhance circuit synthesis methods. As a proof of concept, we search for new three-node qubit circuits. 
+The search performed here uses the enumerated set of unique circuits directly; it does not use Hamiltonian classes to reduce the optimization space. A class-level optimization could substantially reduce this search space, but a Hamiltonian class does not uniquely determine either the physically accessible parameter region or circuit-specific noise couplings. We therefore optimize explicit circuit realizations.
+
+We begin by developing a framework to optimize the performance of an arbitrary circuit as a qubit and then apply it to each unique three-node circuit. Any circuit can be used as a superconducting qubit, but some perform better than others. We quantify this performance as the number of gates $N_{\rm gate}$ that can be performed within the coherence time $T_2$ 
+\begin{align}\label{eq:ngate}
+N_{\rm gate} = \frac{T_2}{T_{\rm gate}}\,.
+\end{align}
+Here $T_{\rm gate}$ estimates the duration of a single qubit $X$ gate, and we define $1/T_2 = 1/2T_1 + 1/T_\phi$ to include both energy relaxation $T_1$ and dephasing $T_\phi$.
+
+
+Because we consider many previously unstudied circuits, our modeling requires several simplifying assumptions, which we describe here and in \cref{app:details}. Our objective function $N_{\rm gate}$ is best viewed as a {\em qualitative} architecture-agnostic screening tool for rapid evaluation, not as a quantitative predictor of gate count. It highlights circuits and operating points that balance coherence and control.
+
+
+To estimate $T_2$, we use the \verb|SQcircuit| package to analyze our circuits \cite{rajabzadehAnalysisArbitrarySuperconducting2023, rajabzadehGeneralFrameworkGradientBased2024}. Energy-relaxation rates are calculated using Fermi's golden rule, while dephasing rates depend on the sensitivity of the qubit frequency to noise parameters. We use the default noise amplitudes, which agree with the lower bound presented in \cite{houck_life_2009}. For more details on how these rates are calculated, see \cite{rajabzadehAnalysisArbitrarySuperconducting2023, rajabzadehGeneralFrameworkGradientBased2024}. Moreover, for circuits with external flux, \texttt{SQcircuit} assigns the branch fluxes using its gauge-consistent irrotational construction~\cite{YouKoch2019,BryonExtFlux2023,rajabzadehAnalysisArbitrarySuperconducting2023}. Flux-noise estimates therefore use the resulting circuit-specific flux distribution.
+
+
+
+To estimate $T_{\rm gate}$, we consider a simplified three-level system and estimate the time required to complete either a direct transition $\ket{0} \rightarrow \ket{1}$ or a transition via the higher-lying state $\ket{0} \rightarrow \ket{2} \rightarrow \ket{1}$. Our model, detailed in \cref{app:gate_time}, uses the level spacing to compute a lower bound on the gate time, independent of any specific drive.
+
+While estimating gate time from the matrix elements of an explicit drive operator is more precise, constructing a physical drive model for every candidate is computationally prohibitive. Identifying and optimizing these circuit-specific couplings therefore lies beyond the scope of this enumeration study. We instead rely on our analytical speed limit for efficient optimization. Then, for the top identified circuit, we construct an explicit drive circuit and show that the simulated gate speed closely matches our analytical model.
+
+
+We optimize \cref{eq:ngate} for each circuit; the optimization dimension is given by the number of circuit elements and offset biases.
+We execute this search using a Python implementation of the differential evolution algorithm~\cite{price_benchmarking_2005}, a widely used gradient-free genetic algorithm. Our optimization returns the optimal circuit-element parameters and offset biases, which we call the ``optimized point''.
+We also perform a sensitivity analysis to model imperfections in fabrication. Good candidate qubits are robust to small changes in the optimized parameters. We do this by randomly sampling 100 nearby points in circuit parameter space from a normal distribution with a 2.5\% standard deviation about the optimized point.
+
+
+A key choice in the optimization is the allowed values for circuit parameters. We choose ranges that extend somewhat beyond present-day superconducting qubits (see \cref{tab:params_overview}). This choice reflects the possibility that design, materials, and fabrication advances may make such devices feasible. We note that, in the first-pass optimization over all circuits, every Josephson junction includes the fixed intrinsic capacitance $C_J=1.9\,{\rm fF}$.
+
+\begin{table}[htbp]
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{@{}crrcc@{}}
+\toprule
+Parameter \,\,      &  Min (Freq) & Max (Freq) & Min (SI) &  Max(SI) \\ \toprule
+$E_C$,~ $C$                  & 0.05 GHz &  10.0 GHz & 1.9 fF  & 0.39 pF \\ \midrule
+$E_L$,~ $L$                  & 0.05 GHz &  \phantom{1}5.0 GHz  & 33 nH  & 3.3 $\mu$H \\ \midrule
+$E_J, ~L_J$                  & 1.0\phantom{0} GHz   & 30.0 GHz &  5.4 nH & 0.16 $\mu$H \\ \midrule
+$E_{C_J}$, ~$C_J$ & 10.0\phantom{0} GHz & 10.0 GHz & 1.9 fF & 1.9 fF \\\bottomrule
+\end{tabular}
+\caption{Allowed ranges for circuit parameters. The junction capacitance $C_J$ is taken to be fixed and matches the smallest capacitance allowed. For details on how to convert between physical and frequency units see \cref{app:params}. }
+\label{tab:params_overview}
+\end{table}
+
+To assess this method, we compare our model's predictions to devices from the literature in \cref{app:sweeps}. Accordingly, in \cref{app:sweeps} we restrict the circuit parameters to values that can be realized with current technology. We sweep the circuit parameter space for transmon and fluxonium-like circuits and find that high-performing transmon devices from the literature lie within the best performing regions predicted by our model. We find similarly good agreement in fluxonium if we slightly modify the noise model. Furthermore, our gate time estimate is able to predict the relative gate times of the considered devices.
+
+
+
+%-------------------------------------
+\subsection{Two Node Circuits}
+%-------------------------------------
+\begin{table}[htbp]
+\setlength{\tabcolsep}{5.0pt}
+\centering
+\begin{tabular}{ccccc}
+\toprule
+Base Graph & Circuit & Class & $N_{\rm gate}$ (Mean) & $N_{\rm gate}$ (Std) \\ \toprule
+\multirow{4}{*}{\includegraphics[]{chapter-3-enumeration/figs/2_node_bg1.pdf}}& \texttt{J} & 2-1 & $3.75\cdot10^{3}$ & $1.8\cdot10^{2}$ \\
+& \texttt{JL} & 2-2 & $8.99\cdot10^{4}$ & $1.4\cdot10^{3}$ \\
+& \texttt{JC} & 2-1 & $4.14\cdot10^{4}$ & $8.6\cdot10^{2}$ \\
+& \texttt{JCL} & 2-2 & $1.87\cdot10^{5}$ & $6.0\cdot10^{3}$ \\
+\bottomrule
+\end{tabular}
+\caption{Optimized number of gates for all two-node circuits. The maximum value, $N_{\rm gate} = 187,000 \approx 1.9\times 10^5$, for the optimized fluxonium serves as a benchmark for larger circuits.} 
+\label{tab:optim_two}
+\end{table}
+
+There are four unique two-node circuits. We optimize their performance over the parameter ranges given in \cref{tab:params_overview}. As shown in \cref{tab:optim_two}, the fluxonium-like \verb|JCL| circuit scores highest among the two-node circuits, with an average $N_{\rm gate} = 187,000$. This value is obtained for $E_C = 2.63$ GHz, $E_J = 2.85$ GHz, $E_L = 0.51$ GHz, and $\varphi_{\rm ext} = 0$. As we consider three-node circuits, $N_{\rm gate} = 187,000 \approx 1.9\times 10^5$ will serve as a benchmark.
+
+In \cref{fig:fluxonium_diagram}, we show the energy spectrum and wave functions of the optimized fluxonium. It is similar to the ``Integer Fluxonium'' qubit. The ground state $\ket{0}$ lies mainly in the central well, while $\ket{1}$ and $\ket{2}$ lie mostly in a superposition of the wells at $\varphi = -\pi, \pi$ \cite{mencia_integer_2024}. Our optimized fluxonium acts as a ``light'' version of the integer fluxonium, with the large inductor flattening the flux dispersion. Neither system appears in the parameter sweep of \cref{app:sweeps}, because both operate at $\varphi_{\rm ext}=0$.
+
+\begin{figure}[htbp]
+\centering 
+\includegraphics[width=\colfigwidth]{chapter-3-enumeration/figs/flux_wf.pdf}
+\caption{Dependence of the first three energy levels on external flux (top), optimized fluxonium (left) and integer fluxonium (right), using parameters from \cite{mencia_integer_2024} device D. The first three eigenstates are plotted for both circuits (bottom), with global phase calibrated to make the peak value of the $\ket{0}$ state real and positive. The optimized fluxonium has $E_C = 2.63$ GHz, $E_J = 2.85$ GHz, and $E_L = 0.51$ GHz. The integer fluxonium has $E_C =$ 1.46 GHz, $E_J=$ 6.86 GHz, and $E_L$ = 0.23 GHz. Both circuits operate at zero external flux.}
+\label{fig:fluxonium_diagram}
+\end{figure}
+
+While the integer fluxonium is a compelling candidate, our optimization ultimately ranked it below our top-performing circuit for two reasons. First, integer fluxonium enjoys greater disjoint support than the optimized fluxonium, but it is more sensitive to external flux, which penalizes its performance within our noise model. Second, our spectral gate-time estimate penalizes circuits with nearly degenerate first and second excited states ($E_1 \approx E_2$), a defining feature of the integer fluxonium. This second penalty illustrates a key limitation of our gate-time model. In the integer fluxonium, the $\ket{0} \rightarrow \ket{2}$ transition is physically forbidden, meaning direct $\ket{0} \rightarrow \ket{1}$ transitions can be driven much faster than the near-degeneracy of the $\ket{1}$ and $\ket{2}$ states would imply. Because our architecture-agnostic model does not capture this matrix-element selection rule, it artificially penalizes the integer fluxonium in favor of circuits with nondegenerate $\ket{1}$ and $\ket{2}$ states.
+
+
+
+
+%-------------------------------------
+\subsection{Three Node Circuits}
+%-------------------------------------
+There are 80 unique three-node circuits. For each base graph, \cref{tab:optim_bg} lists the four highest-scoring circuits. In \cref{app:more_optim_results}, we also group the highest-scoring circuits by number of junctions, number of flux loops, and number of compact modes.
+
+
+
+\begin{table}[htbp]
+\setlength{\tabcolsep}{3.5pt}
+\centering
+\begin{tabular}{ccccc}
+\toprule
+Base Graph & Circuit & Class & $N_{\rm gate}$ (Mean) & $N_{\rm gate}$ (Std) \\ \toprule
+\multirow{4}{*}{\includegraphics[]{chapter-3-enumeration/figs/3_node_bg1.pdf}}& \texttt{JL}, \texttt{JCL} & 3-9 & $1.87\cdot10^{5}$ & $5.6\cdot10^{3}$ \\
+& \texttt{JCL}, \texttt{JCL} & 3-9 & $1.86\cdot10^{5}$ & $5.0\cdot10^{3}$ \\
+& \texttt{JC}, \texttt{CL} & 3-1 & $1.19\cdot10^{5}$ & $2.3\cdot10^{3}$ \\
+& \texttt{J}, \texttt{JCL} & 3-13 & $9.53\cdot10^{4}$ & $1.2\cdot10^{3}$ \\
+\midrule
+\multirow{4}{*}{\includegraphics[]{chapter-3-enumeration/figs/3_node_bg2.pdf}}& \texttt{J}, \texttt{L}, \texttt{CL} & 3-5 & $2.77\cdot10^{5}$ & $1.6\cdot10^{4}$ \\
+& \texttt{J}, \texttt{CL}, \texttt{CL} & 3-6 & $2.50\cdot10^{5}$ & $1.1\cdot10^{4}$ \\
+& \texttt{J}, \texttt{JL}, \texttt{L} & 3-11 & $2.39\cdot10^{5}$ & $1.8\cdot10^{4}$ \\
+& \texttt{JC}, \texttt{CL}, \texttt{CL} & 3-6 & $2.38\cdot10^{5}$ & $1.1\cdot10^{4}$ \\
+\bottomrule
+\end{tabular}
+ \caption{Four highest-scoring three-node circuits for each base graph. The “Base Graph” column shows the circuit topology, and the “Circuit” column lists the elements on each edge, separated by commas. Note that \texttt{J} edges include an intrinsic capacitance.} We also give the corresponding circuit class from \cref{tab:comparison_by_var}.
+\label{tab:optim_bg}
+\end{table}
+
+
+Circuits belonging to the $\Delta$ base graph are the highest performing. Their optimized $N_{\rm gate}$ values exceed the two-node benchmark, $N_{\rm gate}\approx1.9\times10^5$, by factors of approximately $1.2$--$1.5$, corresponding to a $20\%$--$50\%$ improvement. However, their larger Monte Carlo variance indicates greater sensitivity to variations in the optimized component parameters.
+
+\begin{figure}[htbp]
+\centering 
+\includegraphics[width=\colfigwidth]{chapter-3-enumeration/figs/new_wf_1.pdf}
+\caption{
+The top-performing circuit ``\texttt{J}, \texttt{L}, \texttt{CL}''. Panel (a) shows the circuit diagrams with parameter values. All junctions also include an intrinsic capacitance $E_{C_J} = 10$ GHz. (b) shows the flux dispersion about the optimized operating point. (c) shows the wavefunctions of the lowest three energy eigenstates, multiplied by a global phase so that the peak of the $\ket{0}$ state is positive and real. Green denotes positive amplitude and pink negative amplitude. The gray background shows contours of the potential energy landscape, with white for low energy and dark gray for high energy. In the optimized ``\texttt{J}, \texttt{L}, \texttt{CL}'' circuit, the wavefunctions appear fluxonium-like in one direction and harmonic-oscillator-like in the other.}
+\label{fig:new_wf_1}
+\end{figure}
+
+
+We now examine the highest-performing circuit, \texttt{J}, \texttt{L}, \texttt{CL}, in more detail. It belongs to Hamiltonian class 3-5 and consists of a light extended mode coupled to a heavy harmonic mode.  As shown in \cref{fig:new_wf_1}(a-c), its wavefunctions appear fluxonium-like along the extended coordinate and harmonic-oscillator-like along the other. Its flux dispersion is also fluxonium-like, but with reduced sensitivity near the optimized operating point.
+
+
+An explicit coupling scheme for driving single-qubit gates in the top-performing circuit, ``\texttt{J}, \texttt{L}, \texttt{CL},'' is constructed and shown in \cref{fig:new_circuit_drive}(a). 
+In principle, the voltage source could be replaced by a resonator for dispersive readout. In the ideal case, with no capacitance to ground, the source couples only to the harmonic mode $q_1$. The coupling capacitors add mass to this already heavy mode and do not meaningfully change the system. When capacitance to ground is included, however, the drive also couples to the extended mode. With dimensionless charge operators $q_i = Q_i/2e$ and charge offset $n_g = C_cV/2e$, the drive Hamiltonian is
+\begin{align}
+H_{\rm drive} = n_g(g_1q_1 + g_2q_2),
+\end{align}
+with $g_1 \approx 2.45$ GHz and $g_2 \approx 0.87$ GHz. Here $q_1$ and $q_2$ are the charge operators for the harmonic and extended modes, respectively. See \cref{app:quantization_details} for details of the circuit quantization.
+
+
+\begin{figure}[htbp]
+\centering 
+\includegraphics[width=\colfigwidth]{chapter-3-enumeration/figs/new_circuit_drive.pdf}
+\caption{(a) Proposed coupling scheme for driving gates on the top-performing circuit ``\texttt{J}, \texttt{L}, \texttt{CL}.'' In the ideal case, the voltage source couples only to the harmonic mode, but capacitance to ground also induces coupling to the extended mode. (b) Magnitudes of the drive-Hamiltonian matrix elements $H_d$ for the lowest five energy levels. Transitions near the qubit frequency (0-2 and 1-3) are forbidden, allowing fast gates with little leakage. (c) Fidelity versus gate time for an optimized monotone pulse with a Gaussian envelope under coherent dynamics. A fidelity of 99.9\% is reached at about 16.4 ns, compared with 18.6 ns predicted by the gate-time model. (d) Dependence of the first and second excited-state energies on the external charge offset. Both energies are insensitive to this parameter.}
+\label{fig:new_circuit_drive}
+\end{figure}
+
+\Cref{fig:new_circuit_drive}(b) shows the direct transition $|0\rangle \leftrightarrow |1\rangle$ has a large matrix element, while nearby transitions in frequency (0-2 and 1-3) are forbidden. This allows fast gates with little leakage. We optimize single-qubit $X$ gates with durations between 5 and 30 ns using a monotone carrier modulated by a Gaussian envelope. In \cref{fig:new_circuit_drive}(c), we plot the infidelity $1-F$ versus gate time $t_g$, where the coherent fidelity $F$ is the average gate fidelity \cite{pedersen_fidelity_2007}. A fidelity of 99.9\% is reached at about 16.4 ns, close to the 18.6 ns predicted by our naive gate-time model. The first and second excited-state energies are insensitive to the new control parameter, see \cref{fig:new_circuit_drive}(d). A key limitation of this design is the requirement for a large inductor and high energy junction with small parallel capacitances. 
+
+
+Our circuit-screening procedure makes several simplifying assumptions. In particular, the original optimization neglected inductor parasitic capacitance, and the Monte Carlo analysis did not vary junction capacitance or capacitance to ground. We therefore added a nominal $0.6$ fF inductor capacitance~\cite{manucharyan_thesis:2012} and reoptimized the four leading three-node circuits in \cref{tab:optim_bg}. We then repeated the fabrication-variation analysis for these circuits. The new analysis includes variations in the inductor, junction, and ground capacitances, together with all previously considered parameter variations; see \cref{tab:re_optim_bg}.
+
+
+\begin{table}[htbp]
+\setlength{\tabcolsep}{3.5pt}
+\centering
+\begin{tabular}{ccccc}
+\toprule \vspace{1pt}
+Base Graph & Circuit & Class & $N_{\rm gate}$ (Mean) & $N_{\rm gate}$ (Std) \\ \toprule
+\multirow{4}{*}{\includegraphics[]{chapter-3-enumeration/figs/3_node_bg2.pdf}}& \texttt{J}, \texttt{L}, \texttt{CL} & 3-5 & $2.70 \cdot10^{5}$ & $1.5\cdot10^{4}$ \\
+& \texttt{J}, \texttt{CL}, \texttt{CL} & 3-6 & $2.51\cdot10^{5}$ & $1.1\cdot10^{4}$ \\
+& \texttt{J}, \texttt{JL}, \texttt{L} & 3-11 & $1.90\cdot10^{5}$ & $1.1\cdot10^{4}$ \\
+& \texttt{JC}, \texttt{CL}, \texttt{CL} & 3-6 & $2.36\cdot10^{5}$ & $0.9\cdot10^{4}$ \\
+\bottomrule
+\end{tabular}
+ \caption{Reoptimized versions of the top four circuits from \cref{tab:optim_bg}, including inductor parasitic capacitance.  In addition to the parameter variations considered in the original Monte Carlo analysis, we individually vary inductor capacitances, junction capacitances, and ground capacitances with the same Gaussian sampling as before. The inductor, junction, and ground capacitance distributions are centered on $C_L=0.6$ fF, $C_J=1.9$ fF, and $C_g=1$ fF, respectively.}
+\label{tab:re_optim_bg}
+\end{table} 
+
+Three of the four leading circuits perform comparably. The third-ranked \texttt{J}, \texttt{JL}, \texttt{L} circuit does not contain an explicit capacitor. Unsurprisingly, it is most sensitive to the newly included variations in the inductor, junction, and ground capacitances, which reduce performance by approximately $20\%$. Had they been included in the original optimization, this circuit would likely not have ranked among the top four candidates.
+The broader lesson is that relevant effects should be included before optimization. If omitted, they introduce sensitivities and degrade the performance of the optimized design.
+
+
+
+% ====================================================
+\section{Conclusion}\label{sec:conc}
+% ====================================================
+
+We have enumerated all nonlinear superconducting circuits of up to five nodes built from capacitors, inductors, and Josephson junctions. These circuits could serve as amplifiers~\cite{blaisCircuitQuantumElectrodynamics2021a}, current mirrors~\cite{kitaev_protected_2006, weiss_spectrum_2019}, or qubits~\cite{blaisCircuitQuantumElectrodynamics2021a}. 
+
+
+
+As a proof of concept, we used a naive optimization metric to search over all unique three-node circuits to find a good qubit. The best three-node circuit offered an approximate 50\% improvement in the number of gates performed within a coherence time relative to our optimized fluxonium circuit. Because three-node circuits have at most two modes, the range of possible Hamiltonians is limited, and so is the improvement in gate count. A more flexible objective function (e.g., considering a variety of logical states) may reveal better three-node qubits.
+
+
+
+Four-node circuits, with richer mode structure and couplings, may outperform three-node circuits, but at the cost of greater complexity. Extending our search for the best qubit to four-node circuits will require more efficient modeling and optimization. \verb|SQcircuit| now includes automatic differentiation, enabling gradient-based methods \cite{rajabzadehGeneralFrameworkGradientBased2024}. Other efforts have added automatic differentiation or GPU support to superconducting-qubit modeling \cite{guilmin2024dynamiqs, XantheComm}, and additional methods, such as tensor networks \cite{di_paolo_efficient_2021}, may also be needed. More advanced numerical methods will be crucial for studying larger circuits. Accurate noise models for larger circuits, such as those proposed by \citet{dravid2026}, would improve predictions as well.
+
+
+Our enumeration procedure extends readily to other two-terminal devices. For example, we have enumerated all four-node circuits that include a quantum phase-slip junction (QPS) \verb|Q|, built from the components
+\begin{align*}
+\texttt{C},\, \texttt{J},\, \texttt{L},\, \texttt{Q},\, &\texttt{JC},\, \texttt{CL},\, \texttt{QC},\, \texttt{JL},\,\texttt{JQ},\, \texttt{QL},\, \\ 
+\texttt{JCL},\, \texttt{JQC}&, \, \texttt{QCL}, \, \texttt{JQL}, \textrm{and}\, \texttt{JQCL}.
+\end{align*}
+See \cref{app:subtleties} for the resulting circuit counts. At present, systematic circuit quantization with QPS elements remains an active area of research, and no software exists to carry it out automatically 
+~\cite{osborne_symplectic_2023, parra-rodriguez2023}. Thus we cannot construct Hamiltonian classes or search over circuits that include QPS devices. Similarly, extending the enumeration to three- or higher-terminal or non-reciprocal devices (e.g., gyrators) would be much harder because the underlying graph theory is more complex.
+
+
+Perhaps the most novel contribution of this work is the development of Hamiltonian classes.
+Enumeration identifies which unique circuits exist, while Hamiltonian classes organize which circuits realize the same underlying dynamical structure.
+Hamiltonian classes extend the notion that a single circuit can behave differently across parameter regimes by showing that different circuits can also behave similarly.
+This allowed us to reduce hundreds of millions of circuit configurations down to a few thousand  Hamiltonian classes. 
+Moreover, Hamiltonian classes allowed us to identify all circuits up to five nodes whose nonlinear coordinates are necessarily delocalized. Such collective mode structure appears in several protected-qubit designs and provides a natural criterion for identifying promising circuit families.
+
+
+
+Our Hamiltonian enumeration results suggest a Mendeleev-like table for multimode circuits. The Mendeleev table, or periodic table, organizes elements by atomic number and reveals trends: elements in the same group often show similar chemical behavior. In superconducting qubits, the family of \texttt{JCL} circuits can be represented as points in the two-dimensional ``table'' defined by $E_L/E_C$ and $E_J/E_C$~\cite{hyyppa_unimon_2022,kalacheva_kinemon_2023}. In this picture, each point represents a different qubit. Such plots provide a simple framework for understanding the differences among most superconducting qubits built today~\cite{devoret2013}. The key idea is that varying circuit parameters produces distinct behaviors, and this analogy works well for single-mode circuits.
+
+Our framework suggests a different way to classify multimode circuits. Harmonic, compact (i.e., periodic), and extended modes can be viewed as ``atoms,'' and different circuits as ``molecules'' built from them. Varying circuit parameters then produces different ``species'' or isotopes of those atoms. In this expanded analogy, the atoms (modes), bonds (inter-mode couplings), and species (circuit parameters) together determine the behavior of a superconducting circuit ``molecule.''

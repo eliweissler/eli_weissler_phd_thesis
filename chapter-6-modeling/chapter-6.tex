@@ -1,0 +1,27 @@
+% !TEX root = ../thesis.tex
+
+\chapter{Matrix-Free Modeling of Multi-Mode Circuits, and an Outlook}\label{chp:modeling}
+
+% Cleared on 2026-10-26. The matrix-free content (hierarchical diagonalization and tensor contraction,
+% the tree of diagonalizations, the proof of principle on the two-qubit gate workflow, the solver and
+% backend notes, the future directions, the time-dynamics material and the GPU kernel listings) is being
+% assembled as a paper in ~/overleaf/matrix_free/main.tex and will be copied back from there.
+% The numerical-modeling background stays in \cref{sec:numerical_modeling}.
+% Content guidance (Tom, 2026-10-22): the story, the idea, the architecture, a proof of principle and a few
+% benchmarks; implementation detail in passing at the end; then the retrospective and the conclusion of the thesis.
+
+
+% Framing agreed with Tom on 2026-10-22: write this as advice to a student who picks up the code,
+% what I would do again, what I would not, and where I would take it, then the conclusion of the thesis.
+% The judgments are Eli's to write; the items below are a skeleton with the facts filled in.
+
+
+% - Build the tree, not the operator: the one idea that paid for everything else.
+% - Validate against an existing code at identical cutoffs before trusting a speedup (the scqubits
+%   reproduction of \cref{sec:kronfree_proof}); fix the eigenstate phases so that matrix elements,
+%   not only energies, can be compared.
+% - Treat leaves and branches as different problems; the solver that is good for one stalls on the other.
+% - Decide real arithmetic from structure, never from parameter values.
+% - What I would not do again: the file interchange between the quantization code and the solver;
+%   a direct interface would have saved the load-time checks and the cross-validation of reduced specs.
+% - On building the implementation with an AI pair programmer: what it was good for and what it was not.

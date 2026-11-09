@@ -1,0 +1,34 @@
+\begin{tikzpicture}
+
+% Main enclosing circle
+\draw[thick] (0,0) circle (4.0);
+\node at (3.3, 3.3) {\large \(\mathbb{R}^{n_{\text{nodes}}}\)};
+\node at (0,3.4) {\footnotesize Extended};
+\node at (0, 3.4-0.4) {\footnotesize(general)};
+%\node at (3.2*0.866+0.1,3.2*-0.5+0.25) {\footnotesize Extended};
+%\node at (3.2*0.866+0.1, 3.2*-0.5-0.4+0.25) {\footnotesize(general)};
+
+% Blue circle (N(W_J)) 30 degrees cosx = 0.866
+\draw[thick, blue] (1.5*-0.866,1.5*0.5) circle (2.1);
+\node[blue] at (-1.45, 2.4) {\normalsize \({\mathrm{null}(\omega_J^T)}\)};
+\node at (2*-0.866,2*0.5) {\footnotesize Harmonic};
+
+% Red circle (N(W_L)) 30 degrees cosx = 0.866, sin30 = 0.5
+\draw[thick, red] (1.5*0.866,1.5*0.5) circle (2.1);
+\node[red] at (1.45, 2.4) {\normalsize \({\mathrm{null}(\omega_L^T)}\)};
+\node at (2*0.866,2*0.5) {\footnotesize Compact};
+
+% Green circle (N(W_C)) cos270 = 0
+\draw[thick, green!70!black] (1.5*0,1.5*-1) circle (2.1);
+\node[green!70!black] at (0,-3.25) {\normalsize \(\mathrm{null}(\omega_C^T)\)};
+\node at (0, -2) {\footnotesize Extended};
+\node at (0, -2.4) {\footnotesize (light)};
+
+% Intersections
+\node at (0.0, 1.0) {\footnotesize Free};
+\node at (0, 0.0) {\footnotesize Cyclic};
+\node at (-1.1, -0.60) {\footnotesize Frozen};
+\node at (1.1, -0.60) {\footnotesize Compact};
+\node at (1.1, -1.00) {\footnotesize (light)};
+
+\end{tikzpicture}
